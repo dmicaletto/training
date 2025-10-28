@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piano di allenamento Laura</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Stile di base e font Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Dark background */
+            color: #ffffff;
+        }
+        /* Stile per l'input focalizzato */
+        input:focus {
+            --tw-ring-color: #3b82f6;
+        }
+    </style>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase variables
+        window.firebaseApp = null;
+        window.db = null;
+        window.auth = null;
+        window.userId = null;
+        window.activeDay = 'day_1'; // Giorno attivo di default
+
+        // Struttura degli allenamenti (DATI MOCK AGGIORNATI)
+        window.workoutDays = {
+            'day_1': {
+                name: "Giorno 1: Petto e Tricipiti",
+                exercises: [
+                    // NOTA SULLE IMMAGINI: Per poter essere visualizzate, gli URL devono puntare direttamente a file immagine pubblici, 
+                    // NON a link di visualizzazione privati di Google Drive o simili che richiedono autenticazione.
+                    { name: "Chest press distensioni delle braccia", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 20, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=CHEST+PRESS' },
+                    { name: "Pectoral Sel Adduzioni delle braccia", sets: 3, reps: "10-12", rest: "90s", defaultWeight: 20, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=PECTORAL+FLY' },
+                    { name: "French Press (Manubri)", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 6, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=FRENCH+PRESS' },
+                    { name: "Spinte in Basso (Pushdown)", sets: 3, reps: "10-15", rest: "60s", defaultWeight: 10, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=TRICIPITI+PUSH' },
+                    { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=LOMBARI' },
+                    { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=CRUNCH' },
+                ]
+            },
+            'day_2': {
+                name: "Giorno 2: Schiena e Bicipiti",
+                exercises: [
+                    { name: "Lat Machine", sets: 4, reps: "8-10", rest: "90s", defaultWeight: 50, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=LAT+MACHINE' },
+                    { name: "Rematore con Manubrio", sets: 3, reps: "10-12 (per braccio)", rest: "60s", defaultWeight: 20, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=REMATORE' },
+                    { name: "Curl con Bilanciere", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 25, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=CURL+BILANCIERE' },
+                    { name: "Curl a Martello ai Cavi", sets: 3, reps: "10-15", rest: "60s", defaultWeight: 10, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=CURL+HAMMER' },
+                    { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=LOMBARI' },
+                    { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=CRUNCH' },
+                ]
+            },
+            'day_3': {
+                name: "Giorno 3: Gambe e Spalle",
+                exercises: [
+                    { name: "Leg Press", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=LEG+PRESS' },
+                    { name: "Leg Extension", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=LEG+EXT' },
+                    { name: "Leg Curl", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=LEG+CURL' },
+                    { name: "Adduzioni", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 15, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=ADDUCTOR' },
+                    { name: "Alzate Laterali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=ALZATE+LATERALI' },
+                    { name: "Alzate Frontali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=ALZATE+FRONTALI' },
+                    { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=LOMBARI' },
+                    { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=CRUNCH' },
+                ]
+            },
+            'day_4': {
+                name: "Giorno 4: Total Body Leggero / Cardio",
+                exercises: [
+                    { name: "Corsa Tapis Roulant", sets: 1, reps: "30 min", rest: "N/A", defaultWeight: 0, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=CARDIO' },
+                    { name: "Crunch", sets: 3, reps: "20+", rest: "60s", defaultWeight: 0, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=CRUNCH' },
+                    { name: "Plank", sets: 3, reps: "60s+", rest: "60s", defaultWeight: 0, imageUrl: 'https://placehold.co/400x200/222222/ffffff/png?text=PLANK' },
+                ]
+            },
+        };
+
+        // --- FIREBASE INITIALIZATION AND AUTHENTICATION ---
+
+        async function initializeFirebase() {
+            try {
+                // Get config from global environment variables
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+                if (Object.keys(firebaseConfig).length === 0) {
+                    console.error("Firebase config non trovato. La persistenza non funzionerà.");
+                    document.getElementById('status-message').textContent = 'Errore: Configurazione Firebase mancante. I dati non saranno salvati.';
+                    return;
+                }
+
+                setLogLevel('error');
+                window.firebaseApp = initializeApp(firebaseConfig);
+                window.db = getFirestore(window.firebaseApp);
+                window.auth = getAuth(window.firebaseApp);
+
+                // Sign in using custom token or anonymously
+                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (initialAuthToken) {
+                    await signInWithCustomToken(window.auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(window.auth);
+                }
+
+                // Wait for auth state to be ready
+                onAuthStateChanged(window.auth, (user) => {
+                    if (user) {
+                        window.userId = user.uid;
+                        document.getElementById('status-message').textContent = 'Connesso e pronto a salvare i log.';
+                        document.getElementById('user-id').textContent = `ID Utente: ${user.uid}`;
+                        console.log('Firebase Initialized and User Authenticated:', window.userId);
+
+                        // Start rendering and listening for data
+                        renderDay(window.activeDay);
+                        startDataListener(window.activeDay);
+                    } else {
+                        console.log('No user signed in.');
+                        document.getElementById('status-message').textContent = 'Non autenticato. I dati non saranno salvati.';
+                        window.userId = null;
+                    }
+                });
+
+            } catch (error) {
+                console.error("Errore durante l'inizializzazione di Firebase:", error);
+                document.getElementById('status-message').textContent = 'Errore grave durante l\'inizializzazione.';
+            }
+        }
+
+        // --- FIRESTORE DATA HANDLING ---
+
+        function getLogDocumentRef(dayId) {
+            if (!window.userId || !window.db) return null;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const collectionPath = `artifacts/${appId}/users/${window.userId}/workout_logs`;
+            return doc(window.db, collectionPath, dayId);
+        }
+
+        /**
+         * Real-time listener for the currently active day's data.
+         * @param {string} dayId - e.g., 'day_1'
+         */
+        function startDataListener(dayId) {
+            if (!window.db || !window.userId) return;
+
+            const docRef = getLogDocumentRef(dayId);
+            if (!docRef) return;
+
+            // Stop any previous listener (if needed, but here we replace the content entirely)
+            // For simplicity in a single-file app, we just re-render on switch.
+
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const loggedData = docSnap.data();
+                    console.log(`Dati per ${dayId} caricati da Firestore:`, loggedData);
+                    // Merge logged data into the current workout structure
+                    const currentDay = window.workoutDays[dayId];
+                    if (currentDay) {
+                        currentDay.exercises = currentDay.exercises.map((exercise, exIndex) => {
+                            // Ensure loggedData.exercises[exIndex] exists before accessing it
+                            const loggedExercise = loggedData.exercises && loggedData.exercises[exIndex] ? loggedData.exercises[exIndex] : {};
+                            return {
+                                ...exercise,
+                                logged_weights: loggedExercise.logged_weights || {},
+                            };
+                        });
+                        // Re-render the current day to display updated weights
+                        renderDay(dayId);
+                    }
+                } else {
+                    console.log(`Nessun log trovato per ${dayId}.`);
+                    // If no document exists, initialize it in the UI with empty logs
+                    const currentDay = window.workoutDays[dayId];
+                    if (currentDay) {
+                        currentDay.exercises = currentDay.exercises.map(exercise => ({
+                            ...exercise,
+                            logged_weights: {}
+                        }));
+                        renderDay(dayId);
+                    }
+                }
+            }, (error) => {
+                console.error("Errore onSnapshot:", error);
+                document.getElementById('status-message').textContent = 'Errore nel caricamento dei dati in tempo reale.';
+            });
+        }
+
+        /**
+         * Saves a single weight entry to Firestore.
+         * @param {string} dayId - e.g., 'day_1'
+         * @param {number} exIndex - Index of the exercise in the array
+         * @param {number} setIndex - Index of the set (0-based)
+         * @param {number|string} weight - The weight value
+         */
+        async function saveWeight(dayId, exIndex, setIndex, weight) {
+            const docRef = getLogDocumentRef(dayId);
+            if (!docRef || !window.userId) {
+                document.getElementById('status-message').textContent = 'Errore: Utente non autenticato o DB non pronto.';
+                return;
+            }
+
+            try {
+                const currentDay = window.workoutDays[dayId];
+                if (!currentDay) throw new Error("Giorno di allenamento non trovato.");
+
+                // Create a deep copy of the structure for safe modification
+                let updatedExercises = JSON.parse(JSON.stringify(currentDay.exercises));
+
+                // Update the specific weight
+                const setKey = `set_${setIndex + 1}`;
+                updatedExercises[exIndex].logged_weights = updatedExercises[exIndex].logged_weights || {};
+                
+                // Convert weight to float, use null if empty string
+                const weightValue = (weight === '' || weight === null) ? null : parseFloat(weight);
+
+                updatedExercises[exIndex].logged_weights[setKey] = weightValue;
+
+                // Prepare the full document structure to save
+                const dataToSave = {
+                    dayId: dayId,
+                    dayName: currentDay.name,
+                    exercises: updatedExercises.map(ex => ({
+                        name: ex.name,
+                        sets: ex.sets,
+                        reps: ex.reps,
+                        rest: ex.rest,
+                        // Salviamo anche defaultWeight e imageUrl per riferimento futuro
+                        defaultWeight: ex.defaultWeight,
+                        imageUrl: ex.imageUrl,
+                        logged_weights: ex.logged_weights // Save logged weights
+                    }))
+                };
+
+                // Use setDoc to overwrite the document with the new full log
+                await setDoc(docRef, dataToSave, { merge: true });
+                // The onSnapshot listener will handle the UI update
+                document.getElementById('status-message').textContent = 'Peso salvato con successo!';
+
+            } catch (error) {
+                console.error("Errore nel salvataggio del peso:", error);
+                document.getElementById('status-message').textContent = `Errore di salvataggio: ${error.message}`;
+            }
+        }
+
+        // --- GEMINI AI INTEGRATION ---
+
+        /**
+         * Chiama l'API di Gemini per generare un consiglio sull'esecuzione dell'esercizio.
+         * @param {string} exerciseName - Nome dell'esercizio.
+         * @param {HTMLElement} exerciseElement - Elemento DOM dove mostrare il risultato.
+         */
+        async function generateExerciseTip(exerciseName, exerciseElement) {
+            const apiKey = ""; // Canvas will provide this
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            // Messaggio di caricamento e disabilita il pulsante
+            const button = document.getElementById(`tip-btn-${exerciseElement.id.replace('tip-output-', '')}`);
+            if (button) button.disabled = true;
+
+            exerciseElement.innerHTML = '<span class="text-yellow-400">Analisi in corso... ✨</span>';
+
+            const systemPrompt = "Sei un personal trainer esperto e conciso. Fornisci un breve consiglio in italiano sulla corretta esecuzione dell'esercizio e indica i principali muscoli coinvolti, massimo 100 parole.";
+            const userQuery = `Fornisci un consiglio per l'esercizio: ${exerciseName}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessun consiglio generato.';
+                
+                exerciseElement.innerHTML = `<p class="text-sm text-gray-300 whitespace-pre-wrap">${text}</p>`;
+
+            } catch (error) {
+                console.error("Errore Gemini API:", error);
+                exerciseElement.innerHTML = `Errore API: Impossibile generare il consiglio. Riprova più tardi.`;
+            } finally {
+                if (button) button.disabled = false;
+            }
+        }
+        window.generateExerciseTip = generateExerciseTip; // Expose globally
+
+
+        // --- UTILITY FUNCTIONS ---
+
+        /**
+         * Restituisce l'URL dell'immagine per un esercizio.
+         * @param {object} exercise - L'oggetto esercizio con il campo imageUrl.
+         */
+        function getImageUrl(exercise) {
+             /* * NOTA IMPORTANTE SULLE IMMAGINI:
+             * L'URL deve essere un link diretto ad un file immagine pubblico. 
+             * I link di Google Drive per la visualizzazione privata non funzionano qui.
+             */
+            return exercise.imageUrl || `https://placehold.co/400x200/222222/ffffff/png?text=IMMAGINE+PER+${encodeURIComponent(exercise.name.toUpperCase().replace(/\s/g, '+'))}`;
+        }
+
+        // --- TIMER/CRONOMETER LOGIC ---
+
+        let timerInterval = null;
+        let timerSeconds = 0;
+        let isTimerRunning = false;
+        let restDuration = 90; // Default rest time
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timerSeconds / 60);
+            const seconds = timerSeconds % 60;
+            const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timer-display').textContent = display;
+
+            const button = document.getElementById('timer-button');
+            if (isTimerRunning) {
+                button.textContent = `Pausa (${display})`;
+                button.classList.remove('bg-green-600', 'hover:bg-green-700');
+                button.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+            } else {
+                button.textContent = 'Inizia Riposo';
+                button.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+                button.classList.add('bg-green-600', 'hover:bg-green-700');
+            }
+
+            // Visual indicator for rest time
+            if (isTimerRunning && timerSeconds <= 0) {
+                // Timer finished
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                document.getElementById('status-message').textContent = 'RIPOSO TERMINATO! Torna ad allenarti.';
+                document.getElementById('timer-display').classList.add('text-red-500');
+                document.getElementById('timer-display').textContent = '00:00';
+            } else if (isTimerRunning && timerSeconds < 10) {
+                 document.getElementById('timer-display').classList.add('text-red-500');
+            } else {
+                document.getElementById('timer-display').classList.remove('text-red-500');
+            }
+        }
+
+        function startTimer(durationSeconds) {
+            restDuration = durationSeconds;
+            if (timerInterval) clearInterval(timerInterval);
+            timerSeconds = durationSeconds;
+            isTimerRunning = true;
+            document.getElementById('status-message').textContent = `Riposo di ${durationSeconds} secondi iniziato.`;
+
+            timerInterval = setInterval(() => {
+                timerSeconds--;
+                updateTimerDisplay();
+                if (timerSeconds < 0) {
+                    clearInterval(timerInterval);
+                    isTimerRunning = false;
+                }
+            }, 1000);
+            updateTimerDisplay();
+        }
+
+        function toggleTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            if (isTimerRunning) {
+                isTimerRunning = false;
+                document.getElementById('status-message').textContent = 'Timer in Pausa.';
+            } else {
+                if (timerSeconds <= 0) {
+                    // Start from the default rest duration if it was finished
+                    startTimer(restDuration);
+                    return; // startTimer already sets the interval
+                }
+                // Resume
+                isTimerRunning = true;
+                document.getElementById('status-message').textContent = 'Timer ripreso.';
+                timerInterval = setInterval(() => {
+                    timerSeconds--;
+                    updateTimerDisplay();
+                }, 1000);
+            }
+            updateTimerDisplay();
+        }
+        
+        // Expose to the global scope for button click handlers
+        window.startTimer = startTimer;
+        window.toggleTimer = toggleTimer;
+
+
+        // --- UI RENDERING ---
+
+        function switchDay(newDayId) {
+            if (window.activeDay === newDayId) return;
+            window.activeDay = newDayId;
+            renderDay(newDayId);
+            startDataListener(newDayId); // Start listener for the new day
+            // Update tab styles
+            document.querySelectorAll('.day-tab').forEach(tab => {
+                if (tab.dataset.day === newDayId) {
+                    tab.classList.remove('text-gray-400', 'border-transparent');
+                    tab.classList.add('text-white', 'border-blue-500', 'bg-gray-700');
+                } else {
+                    tab.classList.remove('text-white', 'border-blue-500', 'bg-gray-700');
+                    tab.classList.add('text-gray-400', 'border-transparent');
+                }
+            });
+        }
+
+        function renderDay(dayId) {
+            const dayData = window.workoutDays[dayId];
+            const contentDiv = document.getElementById('workout-content');
+
+            if (!dayData) {
+                contentDiv.innerHTML = '<p class="text-red-500">Giorno di allenamento non trovato.</p>';
+                return;
+            }
+
+            let html = `<h2 class="text-3xl font-bold mb-6 text-blue-400">${dayData.name}</h2>`;
+
+            dayData.exercises.forEach((exercise, exIndex) => {
+                // Parse rest time for timer logic
+                const restMatch = exercise.rest.match(/(\d+)/);
+                const restSeconds = restMatch ? parseInt(restMatch[1], 10) : 90;
+                
+                // Card Esercizio
+                html += `
+                <div class="bg-gray-800 p-4 mb-6 rounded-xl shadow-lg border border-gray-700">
+                    <!-- Intestazione Esercizio e Immagine -->
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="flex-shrink-0 w-full md:w-1/3">
+                            <img src="${getImageUrl(exercise)}" alt="Immagine di ${exercise.name}"
+                                 onerror="this.onerror=null; this.src='https://placehold.co/400x200/800080/ffffff/png?text=LINK+NON+PUBBLICO!+Carica+un+link+diretto';"
+                                 class="w-full h-auto object-cover rounded-lg border border-gray-600">
+                                 <!-- L'onerror fallback mostra un messaggio esplicito se l'immagine fallisce -->
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="text-xl font-semibold mb-1 text-white">${exercise.name}</h3>
+                            <p class="text-sm text-gray-400">Ripetizioni: <span class="text-blue-300">${exercise.reps}</span></p>
+                            <p class="text-sm text-gray-400">Recupero: <span class="text-yellow-300">${exercise.rest}</span></p>
+                            
+                            <!-- Bottone Cronometro Dinamico -->
+                            <button onclick="window.startTimer(${restSeconds})"
+                                    class="mt-3 w-full md:w-auto px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md">
+                                Avvia Riposo (${exercise.rest})
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Integrazione Gemini AI Tip -->
+                    <div class="mt-4 flex flex-col md:flex-row gap-4 items-start">
+                        <button id="tip-btn-${dayId}-${exIndex}" 
+                                onclick="generateExerciseTip('${exercise.name}', document.getElementById('tip-output-${dayId}-${exIndex}'))"
+                                class="w-full md:w-auto flex-shrink-0 px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition duration-150 shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                            ✨ Chiedi un Tip sull'Esecuzione
+                        </button>
+                        <div id="tip-output-${dayId}-${exIndex}" class="p-3 bg-gray-900 rounded-lg flex-grow text-gray-400 w-full">
+                            <!-- Il tip del Personal Trainer AI apparirà qui -->
+                            <span class="text-xs">Clicca per un consiglio sul corretto svolgimento.</span>
+                        </div>
+                    </div>
+
+
+                    <!-- Log Pesi per Serie -->
+                    <div class="mt-4 border-t border-gray-700 pt-4">
+                        <p class="font-medium mb-2 text-gray-300">Log Pesi (in kg):</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                `;
+
+                for (let setIndex = 0; setIndex < exercise.sets; setIndex++) {
+                    const setKey = `set_${setIndex + 1}`;
+                    // USA defaultWeight se non c'è il logged_weight
+                    const currentWeight = (exercise.logged_weights && exercise.logged_weights[setKey] !== undefined && exercise.logged_weights[setKey] !== null)
+                        ? exercise.logged_weights[setKey]
+                        : exercise.defaultWeight || ''; 
+
+                    html += `
+                        <div class="flex flex-col">
+                            <label for="${dayId}-${exIndex}-${setIndex}" class="text-xs font-light mb-1 text-gray-400">Serie ${setIndex + 1} (R: ${exercise.reps})</label>
+                            <input type="number" step="0.5" value="${currentWeight}"
+                                   onchange="window.saveWeight('${dayId}', ${exIndex}, ${setIndex}, this.value)"
+                                   id="${dayId}-${exIndex}-${setIndex}"
+                                   class="w-full p-2 text-base text-white bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                                   placeholder="Peso (kg)">
+                        </div>
+                    `;
+                }
+
+                html += `
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+
+            contentDiv.innerHTML = html;
+        }
+        
+        // Expose to the global scope for tab switching
+        window.switchDay = switchDay;
+
+        // --- INITIAL SETUP ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Render tabs
+            const tabsContainer = document.getElementById('day-tabs');
+            let tabsHtml = '';
+            let isFirst = true;
+            for (const [dayId, data] of Object.entries(window.workoutDays)) {
+                const activeClasses = isFirst ? 'text-white border-blue-500 bg-gray-700' : 'text-gray-400 border-transparent';
+                tabsHtml += `
+                    <button class="day-tab flex-1 py-3 text-sm font-medium border-b-2 ${activeClasses} transition duration-300 hover:border-blue-500 hover:text-white"
+                            data-day="${dayId}" onclick="window.switchDay('${dayId}')">
+                        ${data.name.split(':')[0]}
+                    </button>
+                `;
+                isFirst = false;
+            }
+            tabsContainer.innerHTML = tabsHtml;
+
+            // Initialize Firebase and start everything
+            initializeFirebase();
+        });
+    </script>
+</head>
+<body class="min-h-screen">
+    <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- Header -->
+        <header class="text-center mb-8 border-b border-gray-700 pb-4">
+            <h1 class="text-4xl font-extrabold text-blue-500 tracking-tight">
+                💪 Piano di allenamento Laura
+            </h1>
+            <p class="text-gray-400 mt-2">Programma di 4 giorni con tracciamento pesi in tempo reale.</p>
+        </header>
+
+        <!-- Status and User ID -->
+        <div class="mb-6 p-3 bg-gray-900 rounded-xl border border-gray-700 text-center">
+            <p id="status-message" class="text-sm font-medium text-green-400">Inizializzazione in corso...</p>
+            <p id="user-id" class="text-xs text-gray-500 mt-1"></p>
+        </div>
+        
+        <!-- Cronometro / Timer di Riposo -->
+        <div class="mb-8 p-5 bg-gray-800 rounded-xl shadow-xl border border-blue-500/50">
+            <h3 class="text-xl font-semibold mb-3 text-blue-300">Timer di Riposo</h3>
+            <div class="flex items-center justify-between">
+                <span id="timer-display" class="text-6xl font-mono tracking-wider text-white">00:00</span>
+                <button id="timer-button" onclick="window.toggleTimer()"
+                        class="px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition duration-150 shadow-md">
+                    Inizia Riposo
+                </button>
+            </div>
+        </div>
+
+
+        <!-- Tabs for Days -->
+        <div id="day-tabs" class="flex justify-around bg-gray-900 rounded-t-xl overflow-hidden border-b-2 border-gray-700 mb-6">
+            <!-- Tabs will be rendered here by JavaScript -->
+        </div>
+
+        <!-- Workout Content Area -->
+        <div id="workout-content" class="min-h-[500px] p-2">
+            <p class="text-center text-gray-500 pt-20">Caricamento del programma...</p>
+        </div>
+
+    </div>
+</body>
+</html>
