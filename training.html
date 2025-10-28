@@ -87,12 +87,12 @@
         // Configurazione Firebase: Per GitHub Pages, devi INSERIRE QUI LA TUA CONFIGURAZIONE.
         // Se lasci vuoto, l'app si caricherà ma NON salverà i dati.
         const MANUAL_FIREBASE_CONFIG = {
-            // apiKey: "TUA_API_KEY",
-            // authDomain: "TUA_AUTH_DOMAIN",
-            // projectId: "TUO_PROJECT_ID",
-            // storageBucket: "TUO_STORAGE_BUCKET",
-            // messagingSenderId: "TUO_MESSAGING_SENDER_ID",
-            // appId: "TUO_APP_ID"
+            apiKey: "AIzaSyCfTXY1foD8Dr9UxRNzLeOu680aNtIw4TA",
+            authDomain: "training-c0b76.firebaseapp.com",
+            projectId: "training-c0b76",
+            storageBucket: "training-c0b76.firebasestorage.app",
+            messagingSenderId: "149618028951",
+            appId: "1:149618028951:web:03756bdf1273a4521954d2"
         };
 
 
@@ -119,6 +119,9 @@
                     firebaseConfig = MANUAL_FIREBASE_CONFIG;
                     // L'ID dell'app è di solito nel config, altrimenti resta 'default-app-id'
                     window.isPersistenceEnabled = true;
+                    // Prendiamo l'AppId dal projectId per l'uso in Firestore path
+                    appId = firebaseConfig.projectId || 'manual-app-id';
+                    window.appId = appId;
                     document.getElementById('status-message').textContent = 'Connesso al tuo progetto Firebase. La persistenza è attiva.';
                 } else {
                     // 3. Nessuna configurazione trovata (modalità Solo Visualizzazione)
