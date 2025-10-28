@@ -31,6 +31,7 @@
         window.auth = null;
         window.userId = null;
         window.activeDay = 'day_1'; // Giorno attivo di default
+        window.isPersistenceEnabled = false; // Nuovo flag per tracciare la persistenza
 
         // Struttura degli allenamenti (DATI MOCK AGGIORNATI)
         window.workoutDays = {
@@ -83,40 +84,73 @@
 
         // --- FIREBASE INITIALIZATION AND AUTHENTICATION ---
 
+        // Configurazione Firebase: Per GitHub Pages, devi INSERIRE QUI LA TUA CONFIGURAZIONE.
+        // Se lasci vuoto, l'app si caricherà ma NON salverà i dati.
+        const MANUAL_FIREBASE_CONFIG = {
+            // apiKey: "TUA_API_KEY",
+            // authDomain: "TUA_AUTH_DOMAIN",
+            // projectId: "TUO_PROJECT_ID",
+            // storageBucket: "TUO_STORAGE_BUCKET",
+            // messagingSenderId: "TUO_MESSAGING_SENDER_ID",
+            // appId: "TUO_APP_ID"
+        };
+
+
         async function initializeFirebase() {
+            // Tenta di ottenere la config dalle variabili Canvas, altrimenti usa la config manuale/vuota
+            let firebaseConfig;
+            let initialAuthToken = null;
+            let appId = 'default-app-id';
+
             try {
-                // Get config from global environment variables
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-
-                if (Object.keys(firebaseConfig).length === 0) {
-                    console.error("Firebase config non trovato. La persistenza non funzionerà.");
-                    document.getElementById('status-message').textContent = 'Errore: Configurazione Firebase mancante. I dati non saranno salvati.';
-                    return;
+                // 1. Tenta variabili Canvas
+                const canvasConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+                const canvasToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                const canvasAppId = typeof __app_id !== 'undefined' ? __app_id : appId;
+                
+                if (Object.keys(canvasConfig).length > 0) {
+                    firebaseConfig = canvasConfig;
+                    initialAuthToken = canvasToken;
+                    appId = canvasAppId;
+                    window.isPersistenceEnabled = true;
+                    document.getElementById('status-message').textContent = 'Connesso in ambiente Canvas. La persistenza è attiva.';
+                } else if (Object.keys(MANUAL_FIREBASE_CONFIG).length > 0) {
+                    // 2. Usa la configurazione manuale (per GitHub Pages)
+                    firebaseConfig = MANUAL_FIREBASE_CONFIG;
+                    // L'ID dell'app è di solito nel config, altrimenti resta 'default-app-id'
+                    window.isPersistenceEnabled = true;
+                    document.getElementById('status-message').textContent = 'Connesso al tuo progetto Firebase. La persistenza è attiva.';
+                } else {
+                    // 3. Nessuna configurazione trovata (modalità Solo Visualizzazione)
+                    window.isPersistenceEnabled = false;
+                    document.getElementById('status-message').textContent = 'ATTENZIONE: Configurazione Firebase mancante. I dati NON saranno salvati.';
+                    // Esegui il rendering senza attendere l'autenticazione
+                    renderDay(window.activeDay);
+                    return; 
                 }
-
+                
+                // --- Inizializzazione Firebase (Solo se la configurazione è valida) ---
                 setLogLevel('error');
                 window.firebaseApp = initializeApp(firebaseConfig);
                 window.db = getFirestore(window.firebaseApp);
                 window.auth = getAuth(window.firebaseApp);
+                window.appId = appId; // Store appId globally
 
-                // Sign in using custom token or anonymously
-                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                // Autenticazione
                 if (initialAuthToken) {
                     await signInWithCustomToken(window.auth, initialAuthToken);
                 } else {
                     await signInAnonymously(window.auth);
                 }
 
-                // Wait for auth state to be ready
+                // Listener per l'autenticazione
                 onAuthStateChanged(window.auth, (user) => {
                     if (user) {
                         window.userId = user.uid;
-                        document.getElementById('status-message').textContent = 'Connesso e pronto a salvare i log.';
                         document.getElementById('user-id').textContent = `ID Utente: ${user.uid}`;
                         console.log('Firebase Initialized and User Authenticated:', window.userId);
 
-                        // Start rendering and listening for data
+                        // Avvia rendering e ascolto dati
                         renderDay(window.activeDay);
                         startDataListener(window.activeDay);
                     } else {
@@ -128,15 +162,18 @@
 
             } catch (error) {
                 console.error("Errore durante l'inizializzazione di Firebase:", error);
-                document.getElementById('status-message').textContent = 'Errore grave durante l\'inizializzazione.';
+                document.getElementById('status-message').textContent = 'Errore grave nell\'inizializzazione di Firebase. Persistenza disabilitata.';
+                window.isPersistenceEnabled = false;
+                renderDay(window.activeDay);
             }
         }
 
         // --- FIRESTORE DATA HANDLING ---
 
         function getLogDocumentRef(dayId) {
-            if (!window.userId || !window.db) return null;
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            if (!window.userId || !window.db || !window.isPersistenceEnabled) return null;
+            // Usiamo window.appId che è stato impostato in initializeFirebase
+            const appId = window.appId || 'default-app-id'; 
             const collectionPath = `artifacts/${appId}/users/${window.userId}/workout_logs`;
             return doc(window.db, collectionPath, dayId);
         }
@@ -146,13 +183,10 @@
          * @param {string} dayId - e.g., 'day_1'
          */
         function startDataListener(dayId) {
-            if (!window.db || !window.userId) return;
+            if (!window.db || !window.userId || !window.isPersistenceEnabled) return;
 
             const docRef = getLogDocumentRef(dayId);
             if (!docRef) return;
-
-            // Stop any previous listener (if needed, but here we replace the content entirely)
-            // For simplicity in a single-file app, we just re-render on switch.
 
             onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
@@ -162,14 +196,12 @@
                     const currentDay = window.workoutDays[dayId];
                     if (currentDay) {
                         currentDay.exercises = currentDay.exercises.map((exercise, exIndex) => {
-                            // Ensure loggedData.exercises[exIndex] exists before accessing it
                             const loggedExercise = loggedData.exercises && loggedData.exercises[exIndex] ? loggedData.exercises[exIndex] : {};
                             return {
                                 ...exercise,
                                 logged_weights: loggedExercise.logged_weights || {},
                             };
                         });
-                        // Re-render the current day to display updated weights
                         renderDay(dayId);
                     }
                 } else {
@@ -198,6 +230,11 @@
          * @param {number|string} weight - The weight value
          */
         async function saveWeight(dayId, exIndex, setIndex, weight) {
+            if (!window.isPersistenceEnabled) {
+                 document.getElementById('status-message').textContent = 'ATTENZIONE: La persistenza è disabilitata. Inserisci la tua config Firebase.';
+                 return;
+            }
+
             const docRef = getLogDocumentRef(dayId);
             if (!docRef || !window.userId) {
                 document.getElementById('status-message').textContent = 'Errore: Utente non autenticato o DB non pronto.';
@@ -229,16 +266,13 @@
                         sets: ex.sets,
                         reps: ex.reps,
                         rest: ex.rest,
-                        // Salviamo anche defaultWeight e imageUrl per riferimento futuro
                         defaultWeight: ex.defaultWeight,
                         imageUrl: ex.imageUrl,
                         logged_weights: ex.logged_weights // Save logged weights
                     }))
                 };
 
-                // Use setDoc to overwrite the document with the new full log
                 await setDoc(docRef, dataToSave, { merge: true });
-                // The onSnapshot listener will handle the UI update
                 document.getElementById('status-message').textContent = 'Peso salvato con successo!';
 
             } catch (error) {
@@ -543,6 +577,7 @@
 
         <!-- Status and User ID -->
         <div class="mb-6 p-3 bg-gray-900 rounded-xl border border-gray-700 text-center">
+            <!-- Messaggio di stato aggiornato per la modalità senza persistenza -->
             <p id="status-message" class="text-sm font-medium text-green-400">Inizializzazione in corso...</p>
             <p id="user-id" class="text-xs text-gray-500 mt-1"></p>
         </div>
