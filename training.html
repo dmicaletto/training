@@ -40,7 +40,7 @@
                 exercises: [
                     // NOTA SULLE IMMAGINI: Per poter essere visualizzate, gli URL devono puntare direttamente a file immagine pubblici, 
                     // NON a link di visualizzazione privati di Google Drive o simili che richiedono autenticazione.
-                    { name: "Cardio Stepper", sets: 1, reps: "30 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO' },
+                    { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO' },
                     { name: "Chest Press distensioni delle braccia", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 20, imageUrl: './images/chestpress.png?text=CHEST+PRESS' },
                     { name: "Pectoral Machine Adduzioni delle braccia", sets: 3, reps: "10-12", rest: "90s", defaultWeight: 20, imageUrl: './images/pectoral.png?text=PECTORAL+FLY' },
                     { name: "French Press (Manubri)", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 6, imageUrl: './images/french-press.png?text=PECTORAL+FLY?text=FRENCH+PRESS' },
@@ -52,7 +52,7 @@
             'day_2': {
                 name: "Giorno 2: Schiena e Bicipiti",
                 exercises: [
-                    { name: "Cardio Stepper", sets: 1, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO' },
+                    { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO' },
                     { name: "Lat Machine", sets: 4, reps: "8-10", rest: "90s", defaultWeight: 50, imageUrl: './images/lat-machine.png?text=LAT+MACHINE' },
                     { name: "Pulley basso con Triangolo", sets: 3, reps: "10-12 (per braccio)", rest: "60s", defaultWeight: 20, imageUrl: './images/pulley-basso.png?text=REMATORE' },
                     { name: "Curl seduto con Manubri", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 25, imageUrl: './images/curl-manubri-seduto-bg.png?text=CURL+BILANCIERE' },
@@ -64,7 +64,7 @@
             'day_3': {
                 name: "Giorno 3: Gambe e Spalle",
                 exercises: [
-                    { name: "Cardio Stepper", sets: 1, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO' },
+                    { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO' },
                     { name: "Leg Press", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: './images/leg-press.png?text=LEG+PRESS' },
                     { name: "Leg Extension", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: './images/legext.png?text=LEG+EXT' },
                     { name: "Leg Curl Sdraiato", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: '/images/leg-curl-sdraiato-bg.png?text=LEG+CURL' },
@@ -346,81 +346,144 @@
 
         // --- TIMER/CRONOMETER LOGIC ---
 
-        let timerInterval = null;
-        let timerSeconds = 0;
-        let isTimerRunning = false;
-        let restDuration = 90; // Default rest time
+        // Mappa per tenere traccia dei timer attivi per ID esercizio
+        let activeTimers = {};
 
-        function updateTimerDisplay() {
-            const minutes = Math.floor(timerSeconds / 60);
-            const seconds = timerSeconds % 60;
-            const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            document.getElementById('timer-display').textContent = display;
+        function getRestTimeSeconds(restString) {
+            // Estrae il primo numero dalla stringa (es. '90s' -> 90, '60-75s' -> 60)
+            const match = restString.match(/(\d+)/);
+            return match ? parseInt(match[1], 10) : 0; // Default 0s se non trovato
+        }
 
-            const button = document.getElementById('timer-button');
-            if (isTimerRunning) {
-                button.textContent = `Pausa (${display})`;
-                button.classList.remove('bg-green-600', 'hover:bg-green-700');
-                button.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
-            } else {
-                button.textContent = 'Inizia Riposo';
-                button.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
-                button.classList.add('bg-green-600', 'hover:bg-green-700');
+        /**
+         * Aggiorna il display del timer per un esercizio specifico.
+         * @param {string} timerId - ID univoco del timer (es. 'day_1-ex_0')
+         * @param {number} seconds - Secondi rimanenti
+         * @param {number} initialDuration - Durata iniziale del riposo
+         */
+        function updateTimerDisplay(timerId, seconds, initialDuration) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            const display = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            const displayElement = document.getElementById(timerId);
+            
+            if (!displayElement) return;
+
+            displayElement.textContent = display;
+
+            // Aggiorna lo stato del pulsante
+            const button = document.getElementById(timerId.replace('timer-display', 'timer-button'));
+            if (button) {
+                if (activeTimers[timerId].isRunning) {
+                    button.textContent = `Pausa (${display})`;
+                    button.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                    button.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+                } else {
+                    // Quando in pausa o terminato, mostra 'Avvia Riposo'
+                    button.textContent = 'Avvia Riposo';
+                    button.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+                    button.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                }
             }
 
             // Visual indicator for rest time
-            if (isTimerRunning && timerSeconds <= 0) {
-                // Timer finished
-                clearInterval(timerInterval);
-                isTimerRunning = false;
-                document.getElementById('status-message').textContent = 'RIPOSO TERMINATO! Torna ad allenarti.';
-                document.getElementById('timer-display').classList.add('text-red-500');
-                document.getElementById('timer-display').textContent = '00:00';
-            } else if (isTimerRunning && timerSeconds < 10) {
-                 document.getElementById('timer-display').classList.add('text-red-500');
+            if (seconds <= 5 && seconds > 0) {
+                 displayElement.classList.add('text-red-500');
             } else {
-                document.getElementById('timer-display').classList.remove('text-red-500');
+                displayElement.classList.remove('text-red-500');
+            }
+            
+            if (seconds <= 0) {
+                displayElement.classList.add('font-bold');
+                displayElement.textContent = '00:00 - FINE!';
+            } else {
+                displayElement.classList.remove('font-bold');
             }
         }
 
-        function startTimer(durationSeconds) {
-            restDuration = durationSeconds;
-            if (timerInterval) clearInterval(timerInterval);
-            timerSeconds = durationSeconds;
-            isTimerRunning = true;
-            document.getElementById('status-message').textContent = `Riposo di ${durationSeconds} secondi iniziato.`;
+        /**
+         * Avvia o ripristina un timer per un esercizio specifico.
+         */
+        function startTimer(dayId, exIndex, restString) {
+            const timerId = `timer-display-${dayId}-${exIndex}`;
+            const durationSeconds = getRestTimeSeconds(restString);
 
-            timerInterval = setInterval(() => {
-                timerSeconds--;
-                updateTimerDisplay();
-                if (timerSeconds < 0) {
-                    clearInterval(timerInterval);
-                    isTimerRunning = false;
+            if (durationSeconds <= 0) {
+                document.getElementById('status-message').textContent = `Nessun tempo di riposo specificato per questo esercizio.`;
+                return;
+            }
+
+            // Cancella eventuali timer globali o precedenti per questo ID
+            if (activeTimers[timerId] && activeTimers[timerId].interval) {
+                clearInterval(activeTimers[timerId].interval);
+            }
+            
+            // Inizializza o ripristina lo stato
+            activeTimers[timerId] = {
+                seconds: durationSeconds,
+                isRunning: true,
+                initialDuration: durationSeconds,
+                interval: null,
+            };
+
+            const interval = setInterval(() => {
+                activeTimers[timerId].seconds--;
+                const remainingSeconds = activeTimers[timerId].seconds;
+
+                updateTimerDisplay(timerId, remainingSeconds, durationSeconds);
+
+                if (remainingSeconds <= 0) {
+                    clearInterval(interval);
+                    activeTimers[timerId].isRunning = false;
+                    // Mostra un messaggio di stato globale solo per la fine del timer
+                    document.getElementById('status-message').textContent = `RIPOSO TERMINATO per ${window.workoutDays[dayId].exercises[exIndex].name}!`;
+                    updateTimerDisplay(timerId, 0, durationSeconds); // Aggiorna a 00:00 - FINE!
                 }
             }, 1000);
-            updateTimerDisplay();
+            
+            activeTimers[timerId].interval = interval;
+            document.getElementById('status-message').textContent = `Riposo di ${durationSeconds} secondi per ${window.workoutDays[dayId].exercises[exIndex].name} iniziato.`;
+            updateTimerDisplay(timerId, durationSeconds, durationSeconds);
         }
 
-        function toggleTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-            if (isTimerRunning) {
-                isTimerRunning = false;
+        /**
+         * Toggle pausa/ripristino per il timer di un esercizio specifico.
+         */
+        function toggleTimer(dayId, exIndex, restString) {
+            const timerId = `timer-display-${dayId}-${exIndex}`;
+            const durationSeconds = getRestTimeSeconds(restString);
+
+            if (durationSeconds <= 0) {
+                document.getElementById('status-message').textContent = `Nessun tempo di riposo specificato per questo esercizio.`;
+                return;
+            }
+
+            if (!activeTimers[timerId] || activeTimers[timerId].seconds <= 0) {
+                // Se non è attivo o è finito, lo fa ripartire dalla durata iniziale
+                startTimer(dayId, exIndex, restString);
+                return;
+            }
+
+            if (activeTimers[timerId].isRunning) {
+                // Metti in pausa
+                clearInterval(activeTimers[timerId].interval);
+                activeTimers[timerId].isRunning = false;
                 document.getElementById('status-message').textContent = 'Timer in Pausa.';
             } else {
-                if (timerSeconds <= 0) {
-                    // Start from the default rest duration if it was finished
-                    startTimer(restDuration);
-                    return; // startTimer already sets the interval
-                }
-                // Resume
-                isTimerRunning = true;
+                // Riprendi
+                activeTimers[timerId].isRunning = true;
                 document.getElementById('status-message').textContent = 'Timer ripreso.';
-                timerInterval = setInterval(() => {
-                    timerSeconds--;
-                    updateTimerDisplay();
+                const interval = setInterval(() => {
+                    activeTimers[timerId].seconds--;
+                    updateTimerDisplay(timerId, activeTimers[timerId].seconds, durationSeconds);
+                    if (activeTimers[timerId].seconds <= 0) {
+                        clearInterval(interval);
+                        activeTimers[timerId].isRunning = false;
+                    }
                 }, 1000);
+                activeTimers[timerId].interval = interval;
             }
-            updateTimerDisplay();
+            updateTimerDisplay(timerId, activeTimers[timerId].seconds, durationSeconds);
         }
         
         // Expose to the global scope for button click handlers
@@ -460,9 +523,12 @@
 
             dayData.exercises.forEach((exercise, exIndex) => {
                 // Parse rest time for timer logic
-                const restMatch = exercise.rest.match(/(\d+)/);
-                const restSeconds = restMatch ? parseInt(restMatch[1], 10) : 90;
+                const restSeconds = getRestTimeSeconds(exercise.rest);
+                const timerId = `timer-display-${dayId}-${exIndex}`;
                 
+                // Determina se l'esercizio è a tempo (Cardio/Stretching) o a serie (Peso)
+                const isTimedExercise = exercise.sets === 0 || exercise.rest === "N/A" || !exercise.sets;
+
                 // Card Esercizio
                 html += `
                 <div class="bg-gray-800 p-4 mb-6 rounded-xl shadow-lg border border-gray-700">
@@ -477,13 +543,23 @@
                         <div class="flex-grow">
                             <h3 class="text-xl font-semibold mb-1 text-white">${exercise.name}</h3>
                             <p class="text-sm text-gray-400">Ripetizioni: <span class="text-blue-300">${exercise.reps}</span></p>
-                            <p class="text-sm text-gray-400">Recupero: <span class="text-yellow-300">${exercise.rest}</span></p>
                             
-                            <!-- Bottone Cronometro Dinamico -->
-                            <button onclick="window.startTimer(${restSeconds})"
-                                    class="mt-3 w-full md:w-auto px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md">
-                                Avvia Riposo (${exercise.rest})
-                            </button>
+                            <!-- Timer di Riposo/Durata e Bottone (Solo per esercizi a serie) -->
+                            ${!isTimedExercise ? `
+                                <p class="text-sm text-gray-400">Recupero: <span class="text-yellow-300">${exercise.rest}</span></p>
+                                <div class="mt-3 flex items-center gap-3">
+                                    <button id="timer-button-${dayId}-${exIndex}" 
+                                            onclick="window.toggleTimer('${dayId}', ${exIndex}, '${exercise.rest}')"
+                                            class="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md flex-grow md:flex-grow-0">
+                                        Avvia Riposo
+                                    </button>
+                                    <span id="${timerId}" class="text-4xl font-mono tracking-wider text-white flex-shrink-0">
+                                        ${String(Math.floor(restSeconds / 60)).padStart(2, '0')}:${String(restSeconds % 60).padStart(2, '0')}
+                                    </span>
+                                </div>
+                            ` : `
+                                <p class="text-sm text-gray-400 mt-2">Modalità: <span class="text-green-400 font-medium">Continuo / Durata</span></p>
+                            `}
                         </div>
                     </div>
 
@@ -501,34 +577,40 @@
                     </div>
 
 
-                    <!-- Log Pesi per Serie -->
-                    <div class="mt-4 border-t border-gray-700 pt-4">
-                        <p class="font-medium mb-2 text-gray-300">Log Pesi (in kg):</p>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <!-- Log Pesi per Serie (Solo per esercizi a serie) -->
+                    ${!isTimedExercise ? `
+                        <div class="mt-4 border-t border-gray-700 pt-4">
+                            <p class="font-medium mb-2 text-gray-300">Log Pesi (in kg):</p>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    ` : ''}
                 `;
 
-                for (let setIndex = 0; setIndex < exercise.sets; setIndex++) {
-                    const setKey = `set_${setIndex + 1}`;
-                    // USA defaultWeight se non c'è il logged_weight
-                    const currentWeight = (exercise.logged_weights && exercise.logged_weights[setKey] !== undefined && exercise.logged_weights[setKey] !== null)
-                        ? exercise.logged_weights[setKey]
-                        : exercise.defaultWeight || ''; 
+                if (!isTimedExercise) {
+                    for (let setIndex = 0; setIndex < exercise.sets; setIndex++) {
+                        const setKey = `set_${setIndex + 1}`;
+                        // USA defaultWeight se non c'è il logged_weight
+                        const currentWeight = (exercise.logged_weights && exercise.logged_weights[setKey] !== undefined && exercise.logged_weights[setKey] !== null)
+                            ? exercise.logged_weights[setKey]
+                            : exercise.defaultWeight || ''; 
 
-                    html += `
-                        <div class="flex flex-col">
-                            <label for="${dayId}-${exIndex}-${setIndex}" class="text-xs font-semibold mb-1 text-yellow-400">Serie ${setIndex + 1} (R: ${exercise.reps})</label>
-                            <input type="number" step="0.5" value="${currentWeight}"
-                                   onchange="window.saveWeight('${dayId}', ${exIndex}, ${setIndex}, this.value)"
-                                   id="${dayId}-${exIndex}-${setIndex}"
-                                   class="w-full p-2 text-base text-white bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
-                                   placeholder="Peso (kg)">
-                        </div>
-                    `;
+                        html += `
+                            <div class="flex flex-col">
+                                <label for="${dayId}-${exIndex}-${setIndex}" class="text-xs font-semibold mb-1 text-yellow-400">Serie ${setIndex + 1} (R: ${exercise.reps})</label>
+                                <input type="number" step="0.5" value="${currentWeight}"
+                                       onchange="window.saveWeight('${dayId}', ${exIndex}, ${setIndex}, this.value)"
+                                       id="${dayId}-${exIndex}-${setIndex}"
+                                       class="w-full p-2 text-base text-white bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                                       placeholder="Peso (kg)">
+                            </div>
+                        `;
+                    }
                 }
 
                 html += `
+                    ${!isTimedExercise ? `
+                            </div>
                         </div>
-                    </div>
+                    ` : ''}
                 </div>
                 `;
             });
@@ -580,19 +662,7 @@
             <p id="user-id" class="text-xs text-gray-500 mt-1"></p>
         </div>
         
-        <!-- Cronometro / Timer di Riposo -->
-        <div class="mb-8 p-5 bg-gray-800 rounded-xl shadow-xl border border-blue-500/50">
-            <h3 class="text-xl font-semibold mb-3 text-blue-300">Timer di Riposo</h3>
-            <div class="flex items-center justify-between">
-                <span id="timer-display" class="text-6xl font-mono tracking-wider text-white">00:00</span>
-                <button id="timer-button" onclick="window.toggleTimer()"
-                        class="px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition duration-150 shadow-md">
-                    Inizia Riposo
-                </button>
-            </div>
-        </div>
-
-
+        
         <!-- Tabs for Days -->
         <div id="day-tabs" class="flex justify-around bg-gray-900 rounded-t-xl overflow-hidden border-b-2 border-gray-700 mb-6">
             <!-- Tabs will be rendered here by JavaScript -->
