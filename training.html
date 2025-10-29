@@ -39,64 +39,63 @@
         window.currentSet = 1;      // Numero della serie corrente (1-based)
         window.unsubscribeListener = null; // Per pulire il listener Firestore
 
-        // Struttura degli allenamenti (DATI MOCK)
+        // Struttura degli allenamenti (DATI MOCK AGGIORNATI)
         window.workoutDays = {
             'day_1': {
                 name: "Giorno 1: Petto e Tricipiti",
                 exercises: [
-																																		 
-																													
-                    { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: 'https://placehold.co/400x200/4F46E5/ffffff?text=CARDIO+STEPPER' },
-                    { name: "Chest Press distensioni delle braccia", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 20, imageUrl: 'https://placehold.co/400x200/4F46E5/ffffff?text=CHEST+PRESS' },
-                    { name: "Pectoral Machine Adduzioni delle braccia", sets: 3, reps: "10-12", rest: "90s", defaultWeight: 20, imageUrl: 'https://placehold.co/400x200/4F46E5/ffffff?text=PECTORAL+FLY' },
-                    { name: "French Press (Manubri)", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 6, imageUrl: 'https://placehold.co/400x200/4F46E5/ffffff?text=FRENCH+PRESS' },
-                    { name: "Spinte in Basso (Pushdown)", sets: 3, reps: "10-15", rest: "60s", defaultWeight: 10, imageUrl: 'https://placehold.co/400x200/4F46E5/ffffff?text=TRICIPITI+PUSH' },
-                    { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x200/4F46E5/ffffff?text=LOMBARI' },
-                    { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x200/4F46E5/ffffff?text=CRUNCH' },
+                    // NOTA SULLE IMMAGINI: Per poter essere visualizzate, gli URL devono puntare direttamente a file immagine pubblici, 
+                    // NON a link di visualizzazione privati di Google Drive o simili che richiedono autenticazione.
+                    { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO' },
+                    { name: "Chest Press distensioni delle braccia", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 20, imageUrl: './images/chestpress.png?text=CHEST+PRESS' },
+                    { name: "Pectoral Machine Adduzioni delle braccia", sets: 3, reps: "10-12", rest: "90s", defaultWeight: 20, imageUrl: './images/pectoral.png?text=PECTORAL+FLY' },
+                    { name: "French Press (Manubri)", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 6, imageUrl: './images/french-press.png?text=PECTORAL+FLY?text=FRENCH+PRESS' },
+                    { name: "Spinte in Basso (Pushdown)", sets: 3, reps: "10-15", rest: "60s", defaultWeight: 10, imageUrl: './images/pushdown.png?text=TRICIPITI+PUSH' },
+                    { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/lombari.jpg?text=LOMBARI' },
+                    { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/crunch.jpg?text=CRUNCH' },
                 ]
             },
             'day_2': {
                 name: "Giorno 2: Schiena e Bicipiti",
                 exercises: [
-                    { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: 'https://placehold.co/400x200/22C55E/ffffff?text=CARDIO+STEPPER' },
-                    { name: "Lat Machine", sets: 4, reps: "8-10", rest: "90s", defaultWeight: 50, imageUrl: 'https://placehold.co/400x200/22C55E/ffffff?text=LAT+MACHINE' },
-                    { name: "Pulley basso con Triangolo", sets: 3, reps: "10-12 (per braccio)", rest: "60s", defaultWeight: 20, imageUrl: 'https://placehold.co/400x200/22C55E/ffffff?text=REMATORE' },
-                    { name: "Curl seduto con Manubri", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 25, imageUrl: 'https://placehold.co/400x200/22C55E/ffffff?text=CURL+MANUBRI' },
-                    { name: "Curl a Martello ai Cavi", sets: 3, reps: "10-15", rest: "60s", defaultWeight: 10, imageUrl: 'https://placehold.co/400x200/22C55E/ffffff?text=CURL+HAMMER' },
-                    { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x200/22C55E/ffffff?text=LOMBARI' },
-                    { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x200/22C55E/ffffff?text=CRUNCH' },
+                    { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO' },
+                    { name: "Lat Machine", sets: 4, reps: "8-10", rest: "90s", defaultWeight: 50, imageUrl: './images/lat-machine.png?text=LAT+MACHINE' },
+                    { name: "Pulley basso con Triangolo", sets: 3, reps: "10-12 (per braccio)", rest: "60s", defaultWeight: 20, imageUrl: './images/pulley-basso.png?text=REMATORE' },
+                    { name: "Curl seduto con Manubri", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 25, imageUrl: './images/curl-manubri-seduto-bg.png?text=CURL+BILANCIERE' },
+                    { name: "Curl a Martello ai Cavi", sets: 3, reps: "10-15", rest: "60s", defaultWeight: 10, imageUrl: './images/hammer-curl.png?text=CURL+HAMMER' },
+                    { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/lombari.jpg?text=LOMBARI' },
+                    { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/crunch.jpg?text=CRUNCH' },
                 ]
             },
             'day_3': {
                 name: "Giorno 3: Gambe e Spalle",
                 exercises: [
-                    { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: 'https://placehold.co/400x200/F97316/ffffff?text=CARDIO+STEPPER' },
-                    { name: "Leg Press", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: 'https://placehold.co/400x200/F97316/ffffff?text=LEG+PRESS' },
-                    { name: "Leg Extension", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: 'https://placehold.co/400x200/F97316/ffffff?text=LEG+EXT' },
-                    { name: "Leg Curl Sdraiato", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: 'https://placehold.co/400x200/F97316/ffffff?text=LEG+CURL' },
-                    { name: "Adduzioni", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 15, imageUrl: 'https://placehold.co/400x200/F97316/ffffff?text=ADDUCTOR' },
-                    { name: "Alzate Laterali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: 'https://placehold.co/400x200/F97316/ffffff?text=ALZATE+LATERALI' },
-                    { name: "Alzate Frontali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: 'https://placehold.co/400x200/F97316/ffffff?text=ALZATE+FRONTALI' },
-                    { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x200/F97316/ffffff?text=LOMBARI' },
-                    { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x200/F97316/ffffff?text=CRUNCH' },
+                    { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO' },
+                    { name: "Leg Press", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: './images/leg-press.png?text=LEG+PRESS' },
+                    { name: "Leg Extension", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: './images/legext.png?text=LEG+EXT' },
+                    { name: "Leg Curl Sdraiato", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: '/images/leg-curl-sdraiato-bg.png?text=LEG+CURL' },
+                    { name: "Adduzioni", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 15, imageUrl: './images/adductor.jpg?text=ADDUCTOR' },
+                    { name: "Alzate Laterali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: './images/alzate-laterali.png?text=ALZATE+LATERALI' },
+                    { name: "Alzate Frontali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: '/images/alzate-frontali.png?text=ALZATE+FRONTALI' },
+                    { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/lombari.jpg?text=LOMBARI' },
+                    { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/crunch.jpg?text=CRUNCH' },
                 ]
             },
         };
 
-        // --- INIZIALIZZAZIONE E AUTENTICAZIONE FIREBASE ---
+        // --- FIREBASE INITIALIZATION AND AUTHENTICATION ---
 
-																							  
-																	  
-        const MANUAL_FIREBASE_CONFIG = {};
-															  
-														 
-										
-																
-											  
-															  
-		  
-
-
+        // Configurazione Firebase: Per GitHub Pages, devi INSERIRE QUI LA TUA CONFIGURAZIONE.
+        // Se lasci vuoto, l'app si caricherà ma NON salverà i dati.
+        const MANUAL_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyCfTXY1foD8Dr9UxRNzLeOu680aNtIw4TA",
+            authDomain: "training-c0b76.firebaseapp.com",
+            projectId: "training-c0b76",
+            storageBucket: "training-c0b76.firebasestorage.app",
+            messagingSenderId: "149618028951",
+            appId: "1:149618028951:web:03756bdf1273a4521954d2"
+        };
+		
         async function initializeFirebase() {
 																										 
             let firebaseConfig;
