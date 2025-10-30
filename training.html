@@ -570,6 +570,57 @@
         }
 
         /**
+         * Funzione per il cronometro totale dell'allenamento.
+         */
+        function startTotalTimer() {
+            if (window.totalTimerInterval) {
+                clearInterval(window.totalTimerInterval);
+            }
+            window.totalTimeSeconds = 0;
+
+            const timerElement = document.getElementById('total-timer');
+            if (timerElement) {
+                timerElement.classList.remove('hidden');
+                timerElement.textContent = 'Durata totale: 00:00:00';
+            }
+
+            window.totalTimerInterval = setInterval(() => {
+                window.totalTimeSeconds++;
+                const hours = Math.floor(window.totalTimeSeconds / 3600);
+                const minutes = Math.floor((window.totalTimeSeconds % 3600) / 60);
+                const seconds = window.totalTimeSeconds % 60;
+
+                const display = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (timerElement) {
+                    timerElement.textContent = `Durata totale: ${display}`;
+                }
+            }, 1000);
+        }
+
+        /**
+         * Ferma e stampa il tempo totale.
+         */
+        function stopTotalTimer() {
+            if (window.totalTimerInterval) {
+                clearInterval(window.totalTimerInterval);
+                window.totalTimerInterval = null;
+            }
+
+            const hours = Math.floor(window.totalTimeSeconds / 3600);
+            const minutes = Math.floor((window.totalTimeSeconds % 3600) / 60);
+            const seconds = window.totalTimeSeconds % 60;
+            const finalTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            showTemporaryMessage(`Allenamento terminato in ${finalTime}!`, 'bg-purple-600');
+            
+            const timerElement = document.getElementById('total-timer');
+            if (timerElement) {
+                timerElement.textContent = `Durata finale: ${finalTime}`;
+                timerElement.classList.add('font-extrabold', 'text-xl');
+            }
+        }
+
+        /**
          * Forza l'arresto del timer e avanza (solo in modalità guidata).
          */
         function terminateRest(dayId, exIndex) {
@@ -633,7 +684,9 @@
             window.isGuidedMode = true;
             window.currentExIndex = 0;
             window.currentSet = 1;
-
+            // AVVIA IL CRONOMETRO TOTALE
+            startTotalTimer(); 
+			
             // Nascondi le tabs e il pulsante di avvio
             document.getElementById('day-tabs').classList.add('hidden');
             document.getElementById('mode-toggle-button').classList.add('hidden');
@@ -649,6 +702,8 @@
          * Ferma la modalità guidata e torna alla visualizzazione standard.
          */
         function stopGuidedMode() {
+			// FERMA IL CRONOMETRO TOTALE
+            stopTotalTimer();
             window.isGuidedMode = false;
             window.currentExIndex = 0;
             window.currentSet = 1;
@@ -668,7 +723,7 @@
             document.getElementById('stop-guided-button').classList.add('hidden');
             
             renderDay(window.activeDay);
-            showTemporaryMessage('Modalità Guidata terminata. Torna alla visualizzazione completa.', 'bg-yellow-600');
+            // La funzione stopTotalTimer mostra il messaggio finale
         }
         window.stopGuidedMode = stopGuidedMode;
 
@@ -722,10 +777,13 @@
             }
 
             // 3. Fine dell'allenamento
+			// FERMA IL CRONOMETRO TOTALE PRIMA DI RENDERE IL MESSAGGIO DI FINE
+            stopTotalTimer(); 
             document.getElementById('workout-content').innerHTML = `
                 <div class="p-8 text-center bg-gray-700 rounded-xl shadow-2xl">
                     <h2 class="text-4xl font-extrabold text-green-400 mb-4">🏆 ALLENAMENTO COMPLETATO! 🥳</h2>
                     <p class="text-xl text-gray-300">Complimenti! Hai completato tutti gli esercizi per ${dayData.name}.</p>
+					<p id="final-time-display" class="text-2xl font-extrabold text-white mt-4">${document.getElementById('total-timer').textContent}</p>
                     <button onclick="window.stopGuidedMode()" class="mt-6 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 transition duration-150 shadow-lg">
                         Torna alla Visualizzazione Completa
                     </button>
@@ -909,7 +967,7 @@
             document.getElementById('mode-toggle-button').classList.remove('hidden');
             document.getElementById('stop-guided-button').classList.add('hidden');
             document.getElementById('day-tabs').classList.remove('hidden');
-
+			document.getElementById('total-timer').classList.add('hidden'); // Nascondi il timer
 
             if (!dayData) {
                 contentDiv.innerHTML = '<p class="text-red-500">Giorno di allenamento non trovato.</p>';
