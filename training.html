@@ -39,6 +39,10 @@
         window.currentSet = 1;      // Numero della serie corrente (1-based)
         window.unsubscribeListener = null; // Per pulire il listener Firestore
 
+		// Variabili per Cronometro Totale
+        window.totalTimeSeconds = 0;
+        window.totalTimerInterval = null;
+		
         // Struttura degli allenamenti (DATI MOCK AGGIORNATI)
         window.workoutDays = {
             'day_1': {
