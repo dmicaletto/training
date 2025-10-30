@@ -503,7 +503,7 @@
 			
                 // Timer terminato (seconds <= 0)
 														  
-                displayElement.textContent = '00:00 - FINE!';
+                displayElement.textContent = '';
 					
                 displayElement.classList.remove('text-white', 'text-red-500');
                 displayElement.classList.add('font-bold', 'text-green-500');
@@ -511,7 +511,7 @@
                 if (terminateButton) terminateButton.classList.add('hidden');
 
                 if (button) {
-                     button.textContent = isGuided ? 'PROSSIMA SERIE / ESERCIZIO' : 'Avvia Riposo';
+                     button.textContent = isGuided ? 'PROSSIMA SERIE/ESERCIZIO' : 'Avvia Riposo';
                      button.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'bg-blue-600', 'hover:bg-blue-700');
                      button.classList.add('bg-green-600', 'hover:bg-green-700');
                 }
@@ -848,7 +848,7 @@
                         <h3 class="text-3xl font-extrabold text-white">${exercise.name}</h3>
                         ${!isTimedExercise ? `
                             <span class="text-4xl font-mono font-bold text-yellow-400 p-2 bg-gray-700 rounded-lg">
-                                ${window.currentSet} / ${exercise.sets}
+                                ${window.currentSet}/${exercise.sets}
                             </span>
                         ` : ''}
                     </div>
@@ -862,7 +862,7 @@
                             <!-- Log Peso Attuale (Solo per esercizi a serie) -->
                             ${!isTimedExercise ? `
                                 <div class="mt-4 p-4 bg-gray-900 rounded-xl">
-                                    <label for="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="text-sm font-semibold mb-2 block text-gray-400">
+                                    <label for="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="text-sm font-semibold mb-2 block text-yellow-300">
                                         Peso per Serie ${window.currentSet} (Reps: ${exercise.reps})
                                     </label>
                                     <input type="number" step="0.5" value="${currentWeight}"
@@ -917,7 +917,7 @@
                                 <button id="terminate-button-${window.activeDay}-${exIndex}"
                                         onclick="window.terminateRest('${window.activeDay}', ${exIndex})"
                                         class="hidden mt-2 px-4 py-2 bg-red-700 text-white font-semibold rounded-full hover:bg-red-800 transition duration-150 shadow-md">
-                                    Termina Riposo in Anticipo
+                                    Termina in Anticipo
                                 </button>
                             ` : ''}
                         </div>
