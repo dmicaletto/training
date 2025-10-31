@@ -204,28 +204,44 @@
         /**
          * Carica il profilo utente da Firestore o usa i default, poi aggiorna il titolo.
          */
-        async function loadUserProfile() {
-            const docRef = getProfileDocumentRef();
-            
-            if (docRef) { 
-                try {
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        const profileData = docSnap.data();
-                        window.userProfile = {
-                            name: profileData.name || window.userProfile.name,
-                            weight: profileData.weight || window.userProfile.weight,
-                            age: profileData.age || window.userProfile.age,
-                            sex: profileData.sex || window.userProfile.sex, // Carica Sesso
-                        };
-                    }
-                } catch (error) {
-                    console.error("Errore nel caricamento del profilo utente:", error);
-                }
-            }
-            
-            renderUserProfileTitle();
-        }
+		// VERSIONE CORRETTA E PIÙ ROBUSTA DI loadUserProfile (Righe 368-403 circa)
+		/**
+		 * Carica il profilo utente da Firestore o usa i default, poi aggiorna il titolo.
+		 * Aggiunge controlli per assicurare che la promise non fallisca.
+		 */
+		async function loadUserProfile() {
+		    const docRef = getProfileDocumentRef();
+		    
+		    // Se non possiamo ottenere il riferimento (es. persistenza spenta o ID mancante), usiamo i default
+		    if (!docRef) { 
+		        renderUserProfileTitle();
+		        return; 
+		    }
+		
+		    try {
+		        const docSnap = await getDoc(docRef);
+		        if (docSnap.exists()) {
+		            const profileData = docSnap.data();
+		            
+		            // Applica i dati, usando i default come fallback per prevenire 'undefined'
+		            window.userProfile = {
+		                name: profileData.name || window.userProfile.name,
+		                weight: parseFloat(profileData.weight) || window.userProfile.weight,
+		                age: parseInt(profileData.age) || window.userProfile.age,
+		                sex: profileData.sex || window.userProfile.sex, 
+		            };
+		        } else {
+		             // Documento profilo non trovato, mantieni i valori di default
+		             console.log("Documento profilo non trovato. Vengono usati i valori di default.");
+		        }
+		    } catch (error) {
+		        console.error("Errore critico nel caricamento del profilo utente:", error);
+		        // Non bloccare la catena di promise, ma logga l'errore
+		    } finally {
+		        // ASSICURA che il titolo venga aggiornato alla fine del caricamento
+		        renderUserProfileTitle();
+		    }
+		}
         
         /**
          * Salva e aggiorna i dati del profilo utente.
