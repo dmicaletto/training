@@ -40,8 +40,8 @@
 		// Variabili per Cronometro Totale e Tonnellaggio
         window.totalTimeSeconds = 0;
         window.totalTimerInterval = null;
-        window.totalTonnage = 0; // NUOVO: Tonellaggio totale in kg
-        window.exerciseTonnageMap = {}; // NUOVO: Tonellaggio per singolo esercizio (solo in Guided Mode)
+        window.totalTonnage = 0; 
+        window.exerciseTonnageMap = {}; 
 
         // Struttura degli allenamenti (DATI MOCK AGGIORNATI CON NOTE DI DEFAULT)
         window.workoutDays = {
@@ -207,7 +207,7 @@
                             return {
                                 ...exercise,
                                 logged_weights: loggedExercise && loggedExercise.logged_weights ? loggedExercise.logged_weights : {},
-                                logged_notes: loggedExercise && loggedExercise.logged_notes ? loggedExercise.logged_notes : "", // NUOVO
+                                logged_notes: loggedExercise && loggedExercise.logged_notes ? loggedExercise.logged_notes : "", 
                             };
                         });
                     }
@@ -217,7 +217,7 @@
                     currentDay.exercises = currentDay.exercises.map(exercise => ({
                         ...exercise,
                         logged_weights: {},
-                        logged_notes: "", // NUOVO
+                        logged_notes: "", 
                     }));
                 }
                 
@@ -297,7 +297,7 @@
         window.saveWeight = saveWeight; // Esposto globalmente
         
         /**
-         * NUOVA FUNZIONE: Salva una singola nota su Firestore.
+         * Salva una singola nota su Firestore.
          */
         async function saveNote(dayId, exIndex, note) {
             if (!window.isPersistenceEnabled) {
@@ -587,7 +587,7 @@
                 if (isGuided && isRestPeriodActive) {
                     isRestPeriodActive = false;
                     showTemporaryMessage('Riposo terminato! Pronto per il prossimo passo.', 'bg-green-600');
-                    if ('vibrate' in navigator) { // Vibrazione al termine del riposo (NUOVO)
+                    if ('vibrate' in navigator) { // Vibrazione al termine del riposo
                         navigator.vibrate(500); 
                     }
                 }
@@ -684,8 +684,6 @@
             const minutes = Math.floor((window.totalTimeSeconds % 3600) / 60);
             const seconds = window.totalTimeSeconds % 60;
             const finalTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-            // showTemporaryMessage(`Allenamento terminato in ${finalTime}!`, 'bg-purple-600');
             
             const timerElement = document.getElementById('total-timer');
             if (timerElement) {
@@ -741,8 +739,6 @@
                 }
                 return;
             }
-            
-            // Caso 2: Riposo in Corso (NON deve fare nulla)
         }
         
         // Esposto al Global Scope
@@ -759,7 +755,7 @@
             window.currentExIndex = 0;
             window.currentSet = 1;
             window.totalTonnage = 0; // Reset Tonnellaggio Totale
-            window.exerciseTonnageMap = {}; // Reset Tonnellaggio per Esercizio (NUOVO)
+            window.exerciseTonnageMap = {}; // Reset Tonnellaggio per Esercizio
             
             // AVVIA IL CRONOMETRO TOTALE
             startTotalTimer(); 
@@ -804,7 +800,6 @@
             document.getElementById('guided-controls-container').classList.add('hidden'); // Nascondi contenitore controlli
             
             renderDay(window.activeDay);
-            // La funzione stopTotalTimer mostra il messaggio finale
         }
         window.stopGuidedMode = stopGuidedMode;
 
@@ -815,23 +810,26 @@
         function nextStep() {
             const dayData = window.workoutDays[window.activeDay];
             const currentExercise = dayData.exercises[window.currentExIndex];
+            const setKey = `set_${window.currentSet}`;
             
             // 1. CALCOLA E AGGIORNA TONNELLAGGIO per la serie appena completata (SE è un esercizio a serie)
             const isTimedExercise = currentExercise.sets === 0 || currentExercise.rest === "N/A" || !currentExercise.sets;
             
             if (!isTimedExercise) {
-                const setKey = `set_${window.currentSet}`;
-                // Ottieni il peso loggato per la serie appena completata
-                const weight = (currentExercise.logged_weights && currentExercise.logged_weights[setKey] !== undefined)
-                    ? currentExercise.logged_weights[setKey]
+                // *** CORREZIONE CRUCIALE DEL BUG: Leggiamo il peso loggato dalla cache aggiornata ***
+                // Questo recupera il valore più recente inserito dall'utente.
+                const weight = (currentExercise.logged_weights && currentExercise.logged_weights[setKey] !== undefined && currentExercise.logged_weights[setKey] !== null)
+                    ? parseFloat(currentExercise.logged_weights[setKey])
                     : null;
-
+                
                 // Calcola e somma SOLO se è stato loggato un peso valido (> 0)
                 if (weight !== null && weight > 0) {
                     const tonnage = calculateTonnageForSet(currentExercise.reps, weight);
                     window.totalTonnage += tonnage;
-                    window.exerciseTonnageMap[window.currentExIndex] = (window.exerciseTonnageMap[window.currentExIndex] || 0) + tonnage; // NUOVO
+                    window.exerciseTonnageMap[window.currentExIndex] = (window.exerciseTonnageMap[window.currentExIndex] || 0) + tonnage;
                     updateTonnageDisplay();
+                } else {
+                    showTemporaryMessage('Attenzione: Peso non loggato. Tonnellaggio non calcolato.', 'bg-red-500');
                 }
             }
 
