@@ -20,7 +20,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Importa getDoc per caricare il profilo una tantum
+        import { getFirestore, doc, setDoc, onSnapshot, collection, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Variabili Globali
@@ -43,16 +44,23 @@
         window.totalTonnage = 0; 
         window.exerciseTonnageMap = {}; 
 
+        // NUOVA VARIABILE: Profilo Utente
+        window.userProfile = {
+            name: 'Laura Corridoni',
+            weight: 60, // Peso di default (kg)
+            age: 30,    // Età di default
+        };
+
         // Struttura degli allenamenti (DATI MOCK AGGIORNATI CON NOTE DI DEFAULT)
         window.workoutDays = {
             'day_1': {
                 name: "Giorno 1: Petto e Tricipiti",
                 exercises: [
-                    { name: "Cardio Stepper", sets: 0, reps: "1", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO', notes: "Mantieni un ritmo moderato che ti consenta di parlare." },
-                    { name: "Chest Press distensioni delle braccia", sets: 3, reps: "10", rest: "90s", defaultWeight: 20, imageUrl: './images/chestpress.png?text=CHEST+PRESS', notes: "Spingi i gomiti in avanti. Contrai il petto al massimo accorciamento." },
-                    { name: "Pectoral Machine Adduzioni delle braccia", sets: 3, reps: "10", rest: "90s", defaultWeight: 20, imageUrl: './images/pectoral.png?text=PECTORAL+FLY', notes: "Mantieni le spalle basse e concentratevi solo sulla contrazione del petto." },
-                    { name: "French Press (Manubri)", sets: 3, reps: "10", rest: "90s", defaultWeight: 6, imageUrl: './images/french-press.png?text=PECTORAL+FLY?text=FRENCH+PRESS', notes: "Movimento controllato, senti l'allungamento. Usa un peso moderato." },
-                    { name: "Spinte in Basso (Pushdown)", sets: 3, reps: "10", rest: "60s", defaultWeight: 10, imageUrl: './images/pushdown.png?text=TRICIPITI+PUSH', notes: "Porta il cavo fino in fondo. Contrai il tricipite alla massima estensione." },
+                    { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO', notes: "Mantieni un ritmo moderato che ti consenta di parlare." },
+                    { name: "Chest Press distensioni delle braccia", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 20, imageUrl: './images/chestpress.png?text=CHEST+PRESS', notes: "Spingi i gomiti in avanti. Contrai il petto al massimo accorciamento." },
+                    { name: "Pectoral Machine Adduzioni delle braccia", sets: 3, reps: "10-12", rest: "90s", defaultWeight: 20, imageUrl: './images/pectoral.png?text=PECTORAL+FLY', notes: "Mantieni le spalle basse e concentratevi solo sulla contrazione del petto." },
+                    { name: "French Press (Manubri)", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 6, imageUrl: './images/french-press.png?text=PECTORAL+FLY?text=FRENCH+PRESS', notes: "Movimento controllato, senti l'allungamento. Usa un peso moderato." },
+                    { name: "Spinte in Basso (Pushdown)", sets: 3, reps: "10-15", rest: "60s", defaultWeight: 10, imageUrl: './images/pushdown.png?text=TRICIPITI+PUSH', notes: "Porta il cavo fino in fondo. Contrai il tricipite alla massima estensione." },
                     { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/lombari.jpg?text=LOMBARI', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
                     { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/crunch.jpg?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
                 ]
@@ -126,6 +134,7 @@
                     document.getElementById('status-message').textContent = 'ATTENZIONE: Persistenza disabilitata. Dati NON saranno salvati.';
                     // Esegui il rendering senza attendere l'autenticazione
                     renderDay(window.activeDay);
+                    renderUserProfile(); // Renderizza il profilo di default
                     return; 
                 }
                 
@@ -150,13 +159,16 @@
                         document.getElementById('user-id').textContent = `ID Utente: ${user.uid}`;
                         console.log('Firebase Initialized and User Authenticated:', window.userId);
 
-                        // Avvia rendering e ascolto dati
-                        renderDay(window.activeDay);
-                        startDataListener(window.activeDay);
+                        // Carica prima il profilo utente e poi i dati di allenamento
+                        loadUserProfile().then(() => {
+                            renderDay(window.activeDay);
+                            startDataListener(window.activeDay);
+                        });
                     } else {
                         console.log('No user signed in.');
                         document.getElementById('status-message').textContent = 'Non autenticato. Dati locali.';
                         window.userId = null;
+                        renderUserProfile(); // Renderizza il profilo di default
                     }
                 });
 
@@ -165,10 +177,11 @@
                 document.getElementById('status-message').textContent = 'Errore grave nell\'inizializzazione di Firebase. Persistenza disabilitata.';
                 window.isPersistenceEnabled = false;
                 renderDay(window.activeDay);
+                renderUserProfile(); // Renderizza il profilo di default
             }
         }
 
-        // --- GESTIONE DATI FIRESTORE ---
+        // --- GESTIONE DATI UTENTE E FIRESTORE ---
 
         function getLogDocumentRef(dayId) {
             if (!window.userId || !window.db || !window.isPersistenceEnabled) return null;
@@ -178,9 +191,114 @@
             return doc(window.db, collectionPath, dayId);
         }
 
+        function getProfileDocumentRef() {
+            if (!window.userId || !window.db || !window.isPersistenceEnabled) return null;
+            const appId = window.appId || 'default-app-id'; 
+            const collectionPath = `artifacts/${appId}/users/${window.userId}`;
+            // Usa un documento chiamato 'profile' nella sottocollezione
+            return doc(window.db, collectionPath, 'profile'); 
+        }
+
+        /**
+         * Carica il profilo utente da Firestore.
+         */
+        async function loadUserProfile() {
+            const docRef = getProfileDocumentRef();
+            if (!docRef) {
+                renderUserProfile();
+                return;
+            }
+
+            try {
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const profileData = docSnap.data();
+                    window.userProfile = {
+                        name: profileData.name || window.userProfile.name,
+                        weight: profileData.weight || window.userProfile.weight,
+                        age: profileData.age || window.userProfile.age,
+                    };
+                    console.log('Profilo utente caricato:', window.userProfile);
+                }
+            } catch (error) {
+                console.error("Errore nel caricamento del profilo utente:", error);
+            } finally {
+                renderUserProfile();
+            }
+        }
+        
+        /**
+         * Salva e aggiorna i dati del profilo utente.
+         */
+        async function saveUserProfile(field, value) {
+            if (!window.isPersistenceEnabled || !window.userId) {
+                showTemporaryMessage('ATTENZIONE: Persistenza disabilitata. Dati NON salvati.', 'bg-red-500');
+                return;
+            }
+
+            const docRef = getProfileDocumentRef();
+            if (!docRef) return;
+
+            // Aggiorna la variabile globale
+            if (field === 'name') {
+                window.userProfile.name = value;
+            } else if (field === 'weight') {
+                window.userProfile.weight = parseFloat(value) || window.userProfile.weight;
+            } else if (field === 'age') {
+                window.userProfile.age = parseInt(value) || window.userProfile.age;
+            }
+
+            try {
+                await setDoc(docRef, window.userProfile, { merge: true });
+                showTemporaryMessage(`Profilo aggiornato (${field} salvato)!`, 'bg-blue-600');
+            } catch (error) {
+                console.error("Errore nel salvataggio del profilo:", error);
+                showTemporaryMessage(`Errore di salvataggio profilo: ${error.message}`, 'bg-red-500');
+            }
+        }
+        window.saveUserProfile = saveUserProfile;
+
+        /**
+         * Renderizza la sezione del profilo utente.
+         */
+        function renderUserProfile() {
+            const container = document.getElementById('personal-info-container');
+            if (!container) return;
+
+            // Aggiorna l'header con il nome
+            document.getElementById('main-title').textContent = `💪 Piano di allenamento ${window.userProfile.name}`;
+            
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="flex flex-col">
+                        <label for="profile-name" class="text-xs font-semibold mb-1 text-gray-400">Nome Utente</label>
+                        <input type="text" id="profile-name" value="${window.userProfile.name}"
+                                onchange="window.saveUserProfile('name', this.value)"
+                                class="w-full p-2 text-white bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                                placeholder="Il tuo nome">
+                    </div>
+                    <div class="flex flex-col">
+                        <label for="profile-weight" class="text-xs font-semibold mb-1 text-gray-400">Peso (kg)</label>
+                        <input type="number" step="0.1" id="profile-weight" value="${window.userProfile.weight}"
+                                onchange="window.saveUserProfile('weight', this.value)"
+                                class="w-full p-2 text-white bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                                placeholder="00.0">
+                    </div>
+                    <div class="flex flex-col">
+                        <label for="profile-age" class="text-xs font-semibold mb-1 text-gray-400">Età</label>
+                        <input type="number" id="profile-age" value="${window.userProfile.age}"
+                                onchange="window.saveUserProfile('age', this.value)"
+                                class="w-full p-2 text-white bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                                placeholder="00">
+                    </div>
+                </div>
+            `;
+        }
+        window.renderUserProfile = renderUserProfile;
+
+
         /**
          * Real-time listener per i dati del giorno attivo.
-         * Aggiunge logged_weights e logged_notes alla struttura locale.
          */
         function startDataListener(dayId) {
             if (!window.db || !window.userId || !window.isPersistenceEnabled) return;
@@ -359,16 +477,13 @@
             }, 3000);
         }
 
-        // --- INTEGRAZIONE GEMINI AI ---
+        // --- INTEGRAZIONE GEMINI AI (Omessa per brevità, codice invariato) ---
+        // ... (Il codice di generateExerciseTip rimane invariato)
 
-        /**
-         * Chiama l'API di Gemini per generare un consiglio sull'esecuzione dell'esercizio.
-         */
         async function generateExerciseTip(exerciseName, exerciseElement) {
             const apiKey = "AIzaSyDnrW-1uba9UTTyKJoGctm8eW8F5lSXmtE";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
             
-            // Messaggio di caricamento e disabilita il pulsante
             const button = document.getElementById(`tip-btn-${exerciseElement.id.replace('tip-output-', '')}`);
             if (button) button.disabled = true;
 
@@ -386,7 +501,6 @@
             };
 
             try {
-                // Implementazione di backoff esponenziale
                 let response;
                 let attempt = 0;
                 const MAX_ATTEMPTS = 3;
@@ -416,7 +530,6 @@
                 const result = await response.json();
                 const text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessun consiglio generato.';
                 
-                // Estrai le fonti di grounding (citazioni) se disponibili
                 let sourceHtml = '';
                 const groundingMetadata = result.candidates?.[0]?.groundingMetadata;
                 if (groundingMetadata && groundingMetadata.groundingAttributions) {
@@ -448,8 +561,7 @@
                 if (button) button.disabled = false;
             }
         }
-        window.generateExerciseTip = generateExerciseTip; // Expose globally
-
+        window.generateExerciseTip = generateExerciseTip; 
 
         // --- FUNZIONI UTILITY ---
 
@@ -462,7 +574,6 @@
         
         /**
          * Calcola il tonnellaggio per una singola serie.
-         * Tonnellaggio = 1 Serie * Ripetizioni * Peso.
          */
         function calculateTonnageForSet(repsString, weight) {
             const w = parseFloat(weight);
@@ -470,7 +581,6 @@
                 return 0;
             }
             
-            // Estrai il numero di ripetizioni (cercando il primo numero o un range medio)
             let repsMatch = repsString.match(/(\d+)/);
             let reps = repsMatch ? parseInt(repsMatch[1], 10) : 1; 
 
@@ -516,19 +626,16 @@
         window.updateTonnageDisplay = updateTonnageDisplay;
         
 
-        // --- LOGICA TIMER/CRONOMETRO (Semplificata per modalità guidata) ---
-
-        let activeTimers = {}; // Mappa per tenere traccia dei timer attivi per ID esercizio
-        let isRestPeriodActive = false; // Flag per la modalità guidata
+        // --- LOGICA TIMER/CRONOMETRO (Omessa per brevità, codice invariato) ---
+        
+        let activeTimers = {}; 
+        let isRestPeriodActive = false; 
 
         function getRestTimeSeconds(restString) {
             const match = restString.match(/(\d+)/);
             return match ? parseInt(match[1], 10) : 0;
         }
 
-        /**
-         * Aggiorna il display del timer.
-         */
         function updateTimerDisplay(timerId, seconds, isGuided = false) {
             const minutes = Math.floor(seconds / 60);
             const secs = seconds % 60;
@@ -557,12 +664,10 @@
                      button.classList.remove('bg-yellow-600', 'hover:bg-yellow-700', 'bg-green-600', 'hover:bg-green-700', 'bg-red-600');
 
                      if (timerState && timerState.isRunning) {
-                         // Riposo in corso
                          button.textContent = `RIPOSO IN CORSO`;
                          button.classList.add('bg-blue-600', 'hover:bg-blue-700');
                          if (terminateButton) terminateButton.classList.remove('hidden');
                      } else {
-                         // Pronto per l'avvio (o in modalità non guidata)
                          button.textContent = 'Avvia Riposo';
                          button.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
                          if (terminateButton) terminateButton.classList.add('hidden');
@@ -570,8 +675,7 @@
                  }
 
             } else {
-                // Timer terminato (seconds <= 0)
-                displayElement.textContent = '00:00'; // Mostra zero fisso
+                displayElement.textContent = '00:00'; 
 					
                 displayElement.classList.remove('text-white', 'text-red-500');
                 displayElement.classList.add('font-bold', 'text-green-500');
@@ -587,16 +691,13 @@
                 if (isGuided && isRestPeriodActive) {
                     isRestPeriodActive = false;
                     showTemporaryMessage('Riposo terminato! Pronto per il prossimo passo.', 'bg-green-600');
-                    if ('vibrate' in navigator) { // Vibrazione al termine del riposo
+                    if ('vibrate' in navigator) { 
                         navigator.vibrate(500); 
                     }
                 }
             }
         }
 
-        /**
-         * Avvia un timer da zero.
-         */
         function startTimer(dayId, exIndex, restString, isGuided = false) {
             const timerId = `timer-display-${dayId}-${exIndex}`;
             const durationSeconds = getRestTimeSeconds(restString);
@@ -610,18 +711,16 @@
                 return;
             }
             
-            // Cancella eventuali timer globali o precedenti per questo ID
             if (activeTimers[timerId] && activeTimers[timerId].interval) {
                 clearInterval(activeTimers[timerId].interval);
             }
             
-            // Inizializza lo stato
             activeTimers[timerId] = {
                 seconds: durationSeconds,
                 isRunning: true,
                 interval: null,
             };
-            isRestPeriodActive = true; // Flag di riposo attivo in modalità guidata
+            isRestPeriodActive = true; 
 
             const interval = setInterval(() => {
                 if (activeTimers[timerId].isRunning) { 
@@ -642,9 +741,6 @@
             updateTimerDisplay(timerId, durationSeconds, isGuided);
         }
 
-        /**
-         * Funzione per il cronometro totale dell'allenamento.
-         */
         function startTotalTimer() {
             if (window.totalTimerInterval) {
                 clearInterval(window.totalTimerInterval);
@@ -671,9 +767,6 @@
             }, 1000);
         }
 
-        /**
-         * Ferma e stampa il tempo totale.
-         */
         function stopTotalTimer() {
             if (window.totalTimerInterval) {
                 clearInterval(window.totalTimerInterval);
@@ -693,9 +786,6 @@
             }
         }
 
-        /**
-         * Forza l'arresto del timer e avanza (solo in modalità guidata).
-         */
         function terminateRest(dayId, exIndex) {
             const timerId = `timer-display-${dayId}-${exIndex}`;
             const timerState = activeTimers[timerId];
@@ -704,24 +794,20 @@
                 clearInterval(timerState.interval);
                 timerState.interval = null;
                 timerState.isRunning = false;
-                timerState.seconds = 0; // Forza a zero per passare allo stato "FINE"
+                timerState.seconds = 0; 
                 isRestPeriodActive = false;
                 
                 showTemporaryMessage('Riposo terminato in anticipo. Avanti il prossimo passo!', 'bg-yellow-600');
-                updateTimerDisplay(timerId, 0, true); // Aggiorna la visualizzazione al pulsante "PROSSIMA SERIE"
+                updateTimerDisplay(timerId, 0, true); 
             }
         }
         window.terminateRest = terminateRest;
 
-        /**
-         * Toggle gestisce solo Avvio e Avanzamento (non Pausa/Riprendi).
-         */
         function toggleTimer(dayId, exIndex, restString, isGuided = false) {
             const timerId = `timer-display-${dayId}-${exIndex}`;
             const durationSeconds = getRestTimeSeconds(restString);
 
             if (durationSeconds <= 0) {
-                // Se non c'è riposo, avanziamo subito (solo se guidato)
                 if (isGuided) nextStep();
                 return;
             }
@@ -729,99 +815,91 @@
             const timerState = activeTimers[timerId];
             
             if (!timerState || !timerState.isRunning) {
-                // Caso 1: Avvia Riposo (o Riposo Finito -> Avanza)
                 if (timerState && timerState.seconds <= 0 && isGuided) {
-                    // Timer finito: Avanti il prossimo passo
                     nextStep();
                 } else {
-                    // Avvia il timer da zero
                     startTimer(dayId, exIndex, restString, isGuided);
                 }
                 return;
             }
         }
         
-        // Esposto al Global Scope
         window.toggleTimer = toggleTimer;
 
 
         // --- LOGICA MODALITÀ GUIDATA ---
 
-        /**
-         * Avvia la modalità di allenamento guidato per il giorno attivo.
-         */
         function startGuidedMode() {
             window.isGuidedMode = true;
             window.currentExIndex = 0;
             window.currentSet = 1;
-            window.totalTonnage = 0; // Reset Tonnellaggio Totale
-            window.exerciseTonnageMap = {}; // Reset Tonnellaggio per Esercizio
+            window.totalTonnage = 0; 
+            window.exerciseTonnageMap = {}; 
             
-            // AVVIA IL CRONOMETRO TOTALE
             startTotalTimer(); 
 			
-            // Nascondi le tabs e il pulsante di avvio
             document.getElementById('day-tabs').classList.add('hidden');
             document.getElementById('mode-toggle-button').classList.add('hidden');
-            document.getElementById('guided-controls-container').classList.remove('hidden'); // Mostra contenitore controlli
+            document.getElementById('guided-controls-container').classList.remove('hidden'); 
             
-            updateTonnageDisplay(); // Aggiorna display iniziale
+            updateTonnageDisplay(); 
 
-            // Avvia la visualizzazione del primo esercizio
             renderGuidedMode();
             showTemporaryMessage('Modalità Guidata avviata. Inizia il tuo allenamento!', 'bg-blue-600');
         }
         window.startGuidedMode = startGuidedMode;
 
-        /**
-         * Ferma la modalità guidata e torna alla visualizzazione standard.
-         */
         function stopGuidedMode() {
-			// FERMA IL CRONOMETRO TOTALE
-            stopTotalTimer();
+			stopTotalTimer();
             window.isGuidedMode = false;
             window.currentExIndex = 0;
             window.currentSet = 1;
-            window.totalTonnage = 0; // Reset
-            window.exerciseTonnageMap = {}; // Reset
+            window.totalTonnage = 0; 
+            window.exerciseTonnageMap = {}; 
             isRestPeriodActive = false;
             
-            // Cancella tutti gli intervalli attivi
             for (const timerId in activeTimers) {
                  if (activeTimers[timerId] && activeTimers[timerId].interval) {
                     clearInterval(activeTimers[timerId].interval);
                  }
             }
-            activeTimers = {}; // Resetta tutti i timer
+            activeTimers = {}; 
 
-            // Mostra le tabs e il pulsante di avvio
             document.getElementById('day-tabs').classList.remove('hidden');
             document.getElementById('mode-toggle-button').classList.remove('hidden');
-            document.getElementById('guided-controls-container').classList.add('hidden'); // Nascondi contenitore controlli
+            document.getElementById('guided-controls-container').classList.add('hidden'); 
             
             renderDay(window.activeDay);
         }
         window.stopGuidedMode = stopGuidedMode;
 
 
-        /**
-         * Passa alla serie successiva o all'esercizio successivo.
-         */
         function nextStep() {
             const dayData = window.workoutDays[window.activeDay];
             const currentExercise = dayData.exercises[window.currentExIndex];
             const setKey = `set_${window.currentSet}`;
             
-            // 1. CALCOLA E AGGIORNA TONNELLAGGIO per la serie appena completata (SE è un esercizio a serie)
             const isTimedExercise = currentExercise.sets === 0 || currentExercise.rest === "N/A" || !currentExercise.sets;
             
             if (!isTimedExercise) {
-                // *** CORREZIONE CRUCIALE DEL BUG: Leggiamo il peso loggato dalla cache aggiornata ***
-                // Questo recupera il valore più recente inserito dall'utente.
-                const weight = (currentExercise.logged_weights && currentExercise.logged_weights[setKey] !== undefined && currentExercise.logged_weights[setKey] !== null)
-                    ? parseFloat(currentExercise.logged_weights[setKey])
-                    : null;
+                const inputElement = document.getElementById(`${window.activeDay}-${window.currentExIndex}-${window.currentSet - 1}`);
+                let weight = null;
                 
+                // Leggi il valore dall'input in tempo reale se esiste
+                if (inputElement) {
+                    weight = parseFloat(inputElement.value);
+                }
+                
+                // Se il peso è stato loggato (o l'input è vuoto ma è stato salvato qualcosa in precedenza), usa il valore in memoria
+                if ((weight === null || isNaN(weight)) && currentExercise.logged_weights[setKey] !== undefined) {
+                     weight = parseFloat(currentExercise.logged_weights[setKey]);
+                }
+
+                // Esegui un salvataggio forzato del peso prima di avanzare, se è un valore modificato e non salvato
+                if (inputElement && inputElement.value !== currentExercise.logged_weights[setKey]) {
+                    saveWeight(window.activeDay, window.currentExIndex, window.currentSet - 1, inputElement.value);
+                }
+
                 // Calcola e somma SOLO se è stato loggato un peso valido (> 0)
                 if (weight !== null && weight > 0) {
                     const tonnage = calculateTonnageForSet(currentExercise.reps, weight);
@@ -829,6 +907,7 @@
                     window.exerciseTonnageMap[window.currentExIndex] = (window.exerciseTonnageMap[window.currentExIndex] || 0) + tonnage;
                     updateTonnageDisplay();
                 } else {
+                    // Mostra un avviso se non c'è peso, ma non bloccare il flow
                     showTemporaryMessage('Attenzione: Peso non loggato. Tonnellaggio non calcolato.', 'bg-red-500');
                 }
             }
@@ -838,13 +917,13 @@
             if (activeTimers[timerId] && activeTimers[timerId].interval) {
                 clearInterval(activeTimers[timerId].interval);
             }
-            activeTimers[timerId] = null; // Resetta completamente il timer
+            activeTimers[timerId] = null; 
 
             // 2. Controlla se ci sono altre serie per l'esercizio corrente
             if (!isTimedExercise && window.currentSet < currentExercise.sets) {
                 window.currentSet++;
                 showTemporaryMessage(`Prossima serie: ${window.currentSet} di ${currentExercise.sets}. Inizia la tua serie.`, 'bg-blue-600');
-                renderGuidedMode(); // Ridisegna per la prossima serie
+                renderGuidedMode(); 
                 return;
             }
             
@@ -853,7 +932,7 @@
             
             if (nextExIndex < dayData.exercises.length) {
                 window.currentExIndex = nextExIndex;
-                window.currentSet = 1; // Resetta la serie per il nuovo esercizio
+                window.currentSet = 1; 
                 showTemporaryMessage(`Esercizio successivo: ${dayData.exercises[nextExIndex].name}.`, 'bg-green-600');
                 renderGuidedMode();
                 return;
@@ -874,12 +953,11 @@
                     </button>
                 </div>
             `;
-            // Resetta lo stato di guida per il prossimo avvio
             window.isGuidedMode = false;
             window.currentExIndex = 0;
             window.currentSet = 1;
             isRestPeriodActive = false;
-            document.getElementById('guided-controls-container').classList.add('hidden'); // Nascondi controlli
+            document.getElementById('guided-controls-container').classList.add('hidden'); 
         }
 		
         window.nextStep = nextStep;
@@ -891,7 +969,7 @@
             const contentDiv = document.getElementById('workout-content');
 
             if (window.currentExIndex >= dayData.exercises.length) {
-                nextStep(); // Chiama la fine allenamento
+                nextStep(); 
                 return;
             }
             
@@ -900,27 +978,21 @@
             const restSeconds = getRestTimeSeconds(exercise.rest);
             const timerId = `timer-display-${window.activeDay}-${exIndex}`;
             
-            // Determina se l'esercizio è a tempo (Cardio/Stretching) o a serie (Peso)
             const isTimedExercise = exercise.sets === 0 || exercise.rest === "N/A" || !exercise.sets;
 
-            // Se l'esercizio è a tempo, gestisci come un unico step
             if (isTimedExercise) {
-                window.currentSet = 1; // Assicura che sia 1/1 per i messaggi
+                window.currentSet = 1; 
             }
 
-            // Determina il peso preimpostato o loggato per la SERIE CORRENTE
             const setKey = `set_${window.currentSet}`;
             const currentWeight = (exercise.logged_weights && exercise.logged_weights[setKey] !== undefined && exercise.logged_weights[setKey] !== null)
                 ? exercise.logged_weights[setKey]
                 : exercise.defaultWeight || ''; 
 
-            // Tonnellaggio Esercizio Corrente (NUOVO)
             const currentExTonnage = Math.round(window.exerciseTonnageMap[exIndex] || 0);
 
-            // Il timer è attivo solo se è stato avviato e non è terminato.
             const isTimerRunning = activeTimers[timerId] && activeTimers[timerId].isRunning && activeTimers[timerId].seconds > 0;
             
-            // Il pulsante deve chiamare nextStep() solo se il timer è finito o se è un esercizio a tempo
             const nextStepAction = (isTimerRunning || isTimedExercise) ? 'window.nextStep()' : `window.toggleTimer('${window.activeDay}', ${exIndex}, '${exercise.rest}', true)`;
             
             // --- UI per Esercizio Corrente ---
@@ -1021,16 +1093,13 @@
 
             contentDiv.innerHTML = html;
             
-            // Inizializza o ripristina il timer display
             if (!isTimedExercise) {
-                // Passa 'true' come isGuided
                 updateTimerDisplay(timerId, activeTimers[timerId] ? activeTimers[timerId].seconds : restSeconds, true);
             }
         }
 
 
         function switchDay(newDayId) {
-            // Se si cambia giorno, forza l'uscita dalla modalità guidata
             if (window.isGuidedMode) {
                 stopGuidedMode();
             }
@@ -1038,7 +1107,6 @@
             if (window.activeDay === newDayId) return;
             window.activeDay = newDayId;
             
-            // Forza il ricalcolo e aggiornamento della visualizzazione (per la modalità standard)
             calculateTotalTonnageForDay(newDayId);
             updateTonnageDisplay();
             
@@ -1048,7 +1116,6 @@
                 startDataListener(newDayId); 
             }
 
-            // Aggiorna stili delle tab
             document.querySelectorAll('.day-tab').forEach(tab => {
                 if (tab.dataset.day === newDayId) {
                     tab.classList.remove('text-gray-400', 'border-transparent');
@@ -1065,11 +1132,10 @@
             const dayData = window.workoutDays[dayId];
             const contentDiv = document.getElementById('workout-content');
 
-            // Assicura che il pulsante di avvio sia visibile
             document.getElementById('mode-toggle-button').classList.remove('hidden');
-            document.getElementById('guided-controls-container').classList.add('hidden'); // Nascondi contenitore controlli
+            document.getElementById('guided-controls-container').classList.add('hidden'); 
             document.getElementById('day-tabs').classList.remove('hidden');
-			document.getElementById('total-timer').classList.add('hidden'); // Nascondi il timer
+			document.getElementById('total-timer').classList.add('hidden'); 
 
             if (!dayData) {
                 contentDiv.innerHTML = '<p class="text-red-500">Giorno di allenamento non trovato.</p>';
@@ -1155,7 +1221,6 @@
                     `;
                     for (let setIndex = 0; setIndex < exercise.sets; setIndex++) {
                         const setKey = `set_${setIndex + 1}`;
-                        // USA logged_weights se esiste, altrimenti defaultWeight
                         const currentWeight = (exercise.logged_weights && exercise.logged_weights[setKey] !== undefined && exercise.logged_weights[setKey] !== null)
                             ? exercise.logged_weights[setKey]
                             : exercise.defaultWeight || ''; 
@@ -1227,11 +1292,18 @@
     <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
 
         <header class="text-center mb-8 border-b border-gray-700 pb-4">
-            <h1 class="text-4xl font-extrabold text-blue-500 tracking-tight">
+            <h1 id="main-title" class="text-4xl font-extrabold text-blue-500 tracking-tight">
                 💪 Piano di allenamento Laura
             </h1>
             <p class="text-gray-400 mt-2">Programma di 3 giorni con tracciamento pesi in tempo reale.</p>
         </header>
+        
+        <div class="mb-6 p-4 bg-gray-800 rounded-xl border border-gray-700">
+            <h3 class="text-xl font-bold mb-3 text-yellow-400">Informazioni Personali</h3>
+            <div id="personal-info-container">
+                <p class="text-sm text-gray-500">Caricamento...</p>
+            </div>
+        </div>
 
         <div class="mb-6 p-3 bg-gray-900 rounded-xl border border-gray-700 text-center">
             <p id="status-message" class="text-sm font-medium text-green-400">Inizializzazione in corso...</p>
@@ -1265,4 +1337,3 @@
     </div>
 </body>
 </html>
-
