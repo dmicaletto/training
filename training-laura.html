@@ -357,21 +357,35 @@
                 }
 
                 // Listener per l'autenticazione
-                onAuthStateChanged(window.auth, (user) => {
-                    if (user) {
-                        window.userId = user.uid;
-                        document.getElementById('user-id').textContent = `ID Utente: ${user.uid}`;
-                        loadUserProfile().then(() => {
-                            renderDay(window.activeDay);
-                            startDataListener(window.activeDay);
-                        });
-                    } else {
-                        document.getElementById('status-message').textContent = 'Non autenticato. Dati locali.';
-                        window.userId = null;
-                        renderUserProfileTitle();
-                        renderDay(window.activeDay); 
-                    }
-                });
+				// SOSTITUISCI IL BLOCCO ONAUTHSTATECHANGED (Righe 254-275 circa)
+				onAuthStateChanged(window.auth, (user) => {
+				    // 1. Definisci lo stato dell'utente
+				    if (user) {
+				        window.userId = user.uid;
+				        document.getElementById('user-id').textContent = `ID Utente: ${user.uid}`;
+				    } else {
+				        window.userId = null;
+				        document.getElementById('status-message').textContent = 'Non autenticato. Dati locali.';
+				    }
+				
+				    // 2. Carica/Aggiorna il profilo utente (dati e titolo)
+				    // Usiamo il blocco .then per assicurarci che il caricamento sia completo
+				    loadUserProfile().then(() => {
+				
+				        // 3. Esegui il rendering INIZIALE con i dati di default/profilo
+				        renderDay(window.activeDay);
+				
+				        // 4. Se autenticato E persistenza attiva, avvia l'ascolto in background.
+				        if (window.userId && window.isPersistenceEnabled) {
+				             startDataListener(window.activeDay); 
+				        }
+				
+				    }).catch(err => {
+				         // Fallback se loadUserProfile fallisce, forziamo il rendering
+				         console.error("Errore nel caricamento del profilo utente, forzo il rendering:", err);
+				         renderDay(window.activeDay);
+				    });
+				});
 
             } catch (error) {
                 console.error("Errore durante l'inizializzazione di Firebase:", error);
