@@ -443,10 +443,11 @@
                 if (window.isGuidedMode) {
                     renderGuidedMode();
                 } else {
-                    renderDay(dayId);
+                   
                     // In modalità standard, calcoliamo il tonnellaggio totale qui
                     calculateTotalTonnageForDay(dayId);
                     updateTonnageDisplay();
+					renderDay(dayId);
                 }
 
             }, (error) => {
