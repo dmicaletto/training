@@ -178,12 +178,28 @@
             return doc(window.db, collectionPath, dayId);
         }
 
-        function getProfileDocumentRef() {
-            if (!window.userId || !window.db || !window.isPersistenceEnabled) return null;
-            const appId = window.appId || 'default-app-id'; 
-            const collectionPath = `artifacts/${appId}/users/${window.userId}`;
-            return doc(window.db, collectionPath, 'profile'); 
-        }
+		// VERSIONE PRECEDENTE (Genera 5 Segmenti)
+		/*
+		function getProfileDocumentRef() {
+		    if (!window.userId || !window.db || !window.isPersistenceEnabled) return null;
+		    const appId = window.appId || 'default-app-id'; 
+		    const collectionPath = `artifacts/${appId}/users/${window.userId}`; // Questo è il percorso di 4 segmenti che punta a un documento
+		    return doc(window.db, collectionPath, 'profile'); // .doc(..., 'profile') aggiunge il 5° segmento come COLLECTION, non come documento. ERRORE!
+		}
+		*/
+		
+		// VERSIONE CORRETTA (Genera 6 Segmenti validi: C/D/C/D/C/D)
+		function getProfileDocumentRef() {
+		    if (!window.userId || !window.db || !window.isPersistenceEnabled) return null;
+		    const appId = window.appId || 'default-app-id'; 
+		    
+		    // PERCORSO CORRETTO: artifacts/{appId}/users/{userId}/profiles_meta/data
+		    // profiles_meta è una COLLEZIONE, data è il DOCUMENTO. (6 segmenti)
+		    return doc(window.db, 
+		               `artifacts/${appId}/users/${window.userId}/profiles_meta`, 
+		               'data' // Nome del documento con i dati del profilo
+		           ); 
+		}
 
         /**
          * Carica il profilo utente da Firestore o usa i default, poi aggiorna il titolo.
