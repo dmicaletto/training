@@ -123,6 +123,7 @@
 
         /**
          * Renderizza il contenuto dinamico della modale profilo.
+         */
         function renderProfileContent() {
             const container = document.getElementById('personal-info-content');
             if (!container) return;
@@ -166,7 +167,7 @@
                 <p class="text-xs text-gray-500 mt-4 text-center">I dati sono salvati automaticamente su Firestore.</p>
             `;
         }
-		*/
+
 
         // --- GESTIONE DATI UTENTE E FIRESTORE ---
 
@@ -203,44 +204,28 @@
         /**
          * Carica il profilo utente da Firestore o usa i default, poi aggiorna il titolo.
          */
-		// VERSIONE CORRETTA E PIÙ ROBUSTA DI loadUserProfile (Righe 368-403 circa)
-		/**
-		 * Carica il profilo utente da Firestore o usa i default, poi aggiorna il titolo.
-		 * Aggiunge controlli per assicurare che la promise non fallisca.
-		 */
-		async function loadUserProfile() {
-		    const docRef = getProfileDocumentRef();
-		    
-		    // Se non possiamo ottenere il riferimento (es. persistenza spenta o ID mancante), usiamo i default
-		    if (!docRef) { 
-		        renderUserProfileTitle();
-		        return; 
-		    }
-		
-		    try {
-		        const docSnap = await getDoc(docRef);
-		        if (docSnap.exists()) {
-		            const profileData = docSnap.data();
-		            
-		            // Applica i dati, usando i default come fallback per prevenire 'undefined'
-		            window.userProfile = {
-		                name: profileData.name || window.userProfile.name,
-		                weight: parseFloat(profileData.weight) || window.userProfile.weight,
-		                age: parseInt(profileData.age) || window.userProfile.age,
-		                sex: profileData.sex || window.userProfile.sex, 
-		            };
-		        } else {
-		             // Documento profilo non trovato, mantieni i valori di default
-		             console.log("Documento profilo non trovato. Vengono usati i valori di default.");
-		        }
-		    } catch (error) {
-		        console.error("Errore critico nel caricamento del profilo utente:", error);
-		        // Non bloccare la catena di promise, ma logga l'errore
-		    } finally {
-		        // ASSICURA che il titolo venga aggiornato alla fine del caricamento
-		        renderUserProfileTitle();
-		    }
-		}
+        async function loadUserProfile() {
+            const docRef = getProfileDocumentRef();
+            
+            if (docRef) { 
+                try {
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const profileData = docSnap.data();
+                        window.userProfile = {
+                            name: profileData.name || window.userProfile.name,
+                            weight: profileData.weight || window.userProfile.weight,
+                            age: profileData.age || window.userProfile.age,
+                            sex: profileData.sex || window.userProfile.sex, // Carica Sesso
+                        };
+                    }
+                } catch (error) {
+                    console.error("Errore nel caricamento del profilo utente:", error);
+                }
+            }
+            
+            renderUserProfileTitle();
+        }
         
         /**
          * Salva e aggiorna i dati del profilo utente.
@@ -356,35 +341,21 @@
                 }
 
                 // Listener per l'autenticazione
-				// SOSTITUISCI IL BLOCCO ONAUTHSTATECHANGED (Righe 254-275 circa)
-				onAuthStateChanged(window.auth, (user) => {
-				    // 1. Definisci lo stato dell'utente
-				    if (user) {
-				        window.userId = user.uid;
-				        document.getElementById('user-id').textContent = `ID Utente: ${user.uid}`;
-				    } else {
-				        window.userId = null;
-				        document.getElementById('status-message').textContent = 'Non autenticato. Dati locali.';
-				    }
-				
-				    // 2. Carica/Aggiorna il profilo utente (dati e titolo)
-				    // Usiamo il blocco .then per assicurarci che il caricamento sia completo
-				    loadUserProfile().then(() => {
-				
-				        // 3. Esegui il rendering INIZIALE con i dati di default/profilo
-				        renderDay(window.activeDay);
-				
-				        // 4. Se autenticato E persistenza attiva, avvia l'ascolto in background.
-				        if (window.userId && window.isPersistenceEnabled) {
-				             startDataListener(window.activeDay); 
-				        }
-				
-				    }).catch(err => {
-				         // Fallback se loadUserProfile fallisce, forziamo il rendering
-				         console.error("Errore nel caricamento del profilo utente, forzo il rendering:", err);
-				         renderDay(window.activeDay);
-				    });
-				});
+                onAuthStateChanged(window.auth, (user) => {
+                    if (user) {
+                        window.userId = user.uid;
+                        document.getElementById('user-id').textContent = `ID Utente: ${user.uid}`;
+                        loadUserProfile().then(() => {
+                            renderDay(window.activeDay);
+                            startDataListener(window.activeDay);
+                        });
+                    } else {
+                        document.getElementById('status-message').textContent = 'Non autenticato. Dati locali.';
+                        window.userId = null;
+                        renderUserProfileTitle();
+                        renderDay(window.activeDay); 
+                    }
+                });
 
             } catch (error) {
                 console.error("Errore durante l'inizializzazione di Firebase:", error);
@@ -442,11 +413,10 @@
                 if (window.isGuidedMode) {
                     renderGuidedMode();
                 } else {
-                   
+                    renderDay(dayId);
                     // In modalità standard, calcoliamo il tonnellaggio totale qui
                     calculateTotalTonnageForDay(dayId);
                     updateTonnageDisplay();
-					renderDay(dayId);
                 }
 
             }, (error) => {
