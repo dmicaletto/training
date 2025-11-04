@@ -200,7 +200,13 @@
                        'data' // Nome del documento
                    ); 
         }
-
+		// NUOVA FUNZIONE: Riferimento alla collezione dello storico
+		function getHistoryCollectionRef() {
+		    if (!window.userId || !window.db || !window.isPersistenceEnabled) return null;
+		    const appId = window.appId || 'default-app-id'; 
+		    // Percorso: artifacts/{appId}/users/{userId}/workout_history
+		    return collection(window.db, `artifacts/${appId}/users/${window.userId}/workout_history`);
+		}
         /**
          * Carica il profilo utente da Firestore o usa i default, poi aggiorna il titolo.
          */
@@ -688,6 +694,32 @@
             document.getElementById('day-tabs').classList.remove('hidden'); document.getElementById('mode-toggle-button').classList.remove('hidden');
             document.getElementById('guided-controls-container').classList.add('hidden'); renderDay(window.activeDay);
         }
+		async function logWorkoutHistory(dayName) {
+		    const historyColRef = getHistoryCollectionRef();
+		    if (!historyColRef) return;
+		
+		    const timestamp = new Date();
+		    
+		    const workoutLog = {
+		        date: timestamp.toISOString().split('T')[0], // Data (es. 2025-11-04)
+		        startTime: new Date(timestamp.getTime() - window.totalTimeSeconds * 1000).toLocaleTimeString('it-IT'),
+		        endTime: timestamp.toLocaleTimeString('it-IT'),
+		        durationSeconds: window.totalTimeSeconds,
+		        durationDisplay: `${Math.floor(window.totalTimeSeconds / 3600).toString().padStart(2, '0')}:${Math.floor((window.totalTimeSeconds % 3600) / 60).toString().padStart(2, '0')}:${(window.totalTimeSeconds % 60).toString().padStart(2, '0')}`,
+		        dayName: dayName,
+		        totalTonnage: Math.round(window.totalTonnage),
+		        estimatedCalories: Math.round(window.totalCalories || 0)
+		    };
+		
+		    try {
+		        // Usiamo addDoc per creare un nuovo documento con ID automatico
+		        await setDoc(doc(historyColRef), workoutLog); 
+		        showTemporaryMessage('Allenamento salvato nello storico!', 'bg-green-600');
+		    } catch (error) {
+		        console.error("Errore nel log dello storico:", error);
+		        showTemporaryMessage(`Errore nel salvataggio storico: ${error.message}`, 'bg-red-500');
+		    }
+		}
         window.stopGuidedMode = stopGuidedMode;
         function nextStep() { /* ... codice invariato ... */
             const dayData = window.workoutDays[window.activeDay]; const currentExercise = dayData.exercises[window.currentExIndex]; const setKey = `set_${window.currentSet}`;
@@ -711,6 +743,9 @@
 			// Utilizza window.userProfile.weight, con fallback a 70 kg se non definito
 			const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 50;
 			window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight);
+			// *** NUOVA CHIAMATA PER LOGGARE L'ALLENAMENTO ***
+			logWorkoutHistory(dayData.name); 
+			// ***********************************************
 			showTemporaryMessage(`Allenamento terminato in ${document.getElementById('total-timer').textContent.split(': ').pop()}!`, 'bg-purple-600');
             document.getElementById('workout-content').innerHTML = `<div class="p-8 text-center bg-gray-700 rounded-xl shadow-2xl"><h2 class="text-4xl font-extrabold text-green-400 mb-4">🏆 ALLENAMENTO COMPLETATO! 🥳</h2>
 			<p class="text-xl text-gray-300">Complimenti! Hai completato tutti gli esercizi per ${dayData.name}.</p>
