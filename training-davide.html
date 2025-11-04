@@ -57,6 +57,7 @@
         window.totalTimerInterval = null;
         window.totalTonnage = 0; 
         window.exerciseTonnageMap = {}; 
+		window.totalCalories = 0; // NUOVO: Calorie totali stimate
         
         // DATI DEL PROFILO UTENTE
         window.userProfile = {
@@ -631,6 +632,32 @@
             const timerElement = document.getElementById('total-timer');
             if (timerElement) { timerElement.textContent = `Durata finale: ${finalTime}`; timerElement.classList.remove('text-lg'); timerElement.classList.add('font-extrabold', 'text-xl'); }
         }
+		/**
+		 * Stima le calorie bruciate per l'allenamento con i pesi, aggiustata al peso corporeo.
+		 * @param {number} totalTonnage - Tonnellaggio totale in kg.
+		 * @param {number} bodyWeight - Peso corporeo dell'utente in kg (da window.userProfile).
+		 * @returns {number} Calorie stimate.
+		 */
+		function estimateWeightCalories(totalTonnage, bodyWeight) {
+		    if (totalTonnage <= 0 || bodyWeight <= 0) return 0;
+		    
+		    // Fattore Base di Conversione Calorie per Tonnellata
+		    // Usiamo 3.5 Calorie / tonnellata come punto di partenza.
+		    const CAL_PER_TON_BASE = 3.5; 
+		    const REFERENCE_WEIGHT = 70; // Peso di riferimento standard (70 kg)
+		
+		    // Aggiustamento: Il fattore viene scalato in base al peso dell'utente rispetto al peso di riferimento.
+		    const adjustedFactor = CAL_PER_TON_BASE * (bodyWeight / REFERENCE_WEIGHT);
+		    
+		    const tonnageInTons = totalTonnage / 1000;
+		    
+		    // Calcolo: Tonnellate * Fattore Aggiustato
+		    let estimatedCalories = tonnageInTons * adjustedFactor;
+		    
+		    // Arrotonda a 1 decimale
+		    return Math.round(estimatedCalories * 10) / 10;
+		}
+		window.estimateWeightCalories = estimateWeightCalories;
         function terminateRest(dayId, exIndex) { /* ... codice invariato ... */
             const timerId = `timer-display-${dayId}-${exIndex}`; const timerState = activeTimers[timerId];
             if (timerState && timerState.interval) { clearInterval(timerState.interval); timerState.interval = null; timerState.isRunning = false; timerState.seconds = 0; isRestPeriodActive = false;
@@ -647,7 +674,9 @@
         }
         window.toggleTimer = toggleTimer;
         function startGuidedMode() { /* ... codice invariato ... */
-            window.isGuidedMode = true; window.currentExIndex = 0; window.currentSet = 1; window.totalTonnage = 0; window.exerciseTonnageMap = {}; startTotalTimer();
+            window.isGuidedMode = true; window.currentExIndex = 0; window.currentSet = 1; window.totalTonnage = 0; window.exerciseTonnageMap = {}; 
+			window.totalCalories = 0; // NUOVO: Reset Calorie Totali
+			startTotalTimer();
             document.getElementById('day-tabs').classList.add('hidden'); document.getElementById('mode-toggle-button').classList.add('hidden');
             document.getElementById('guided-controls-container').classList.remove('hidden'); updateTonnageDisplay(); renderGuidedMode();
             showTemporaryMessage('Modalità Guidata avviata. Inizia il tuo allenamento!', 'bg-blue-600');
@@ -677,8 +706,17 @@
             if (nextExIndex < dayData.exercises.length) {
                 window.currentExIndex = nextExIndex; window.currentSet = 1; showTemporaryMessage(`Esercizio successivo: ${dayData.exercises[nextExIndex].name}.`, 'bg-green-600'); renderGuidedMode(); return;
             }
-            stopTotalTimer(); showTemporaryMessage(`Allenamento terminato in ${document.getElementById('total-timer').textContent.split(': ').pop()}!`, 'bg-purple-600');
-            document.getElementById('workout-content').innerHTML = `<div class="p-8 text-center bg-gray-700 rounded-xl shadow-2xl"><h2 class="text-4xl font-extrabold text-green-400 mb-4">🏆 ALLENAMENTO COMPLETATO! 🥳</h2><p class="text-xl text-gray-300">Complimenti! Hai completato tutti gli esercizi per ${dayData.name}.</p><p class="text-2xl font-extrabold text-yellow-400 mt-4">Volume Totale: ${Math.round(window.totalTonnage).toLocaleString('it-IT')} kg</p><p id="final-time-display" class="text-2xl font-extrabold text-white mt-4">${document.getElementById('total-timer').textContent}</p><button onclick="window.stopGuidedMode()" class="mt-6 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 transition duration-150 shadow-lg">Torna alla Visualizzazione Completa</button></div>`;
+            stopTotalTimer(); 
+			// NUOVO: Calcola le calorie stimate totali con aggiustamento peso
+			// Utilizza window.userProfile.weight, con fallback a 70 kg se non definito
+			const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 50;
+			window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight);
+			showTemporaryMessage(`Allenamento terminato in ${document.getElementById('total-timer').textContent.split(': ').pop()}!`, 'bg-purple-600');
+            document.getElementById('workout-content').innerHTML = `<div class="p-8 text-center bg-gray-700 rounded-xl shadow-2xl"><h2 class="text-4xl font-extrabold text-green-400 mb-4">🏆 ALLENAMENTO COMPLETATO! 🥳</h2>
+			<p class="text-xl text-gray-300">Complimenti! Hai completato tutti gli esercizi per ${dayData.name}.</p>
+			<p class="text-2xl font-extrabold text-yellow-400 mt-4">Volume Totale: ${Math.round(window.totalTonnage).toLocaleString('it-IT')} kg</p>
+			<p class="text-2xl font-extrabold text-red-400 mt-2">🔥 Calorie Stimate: ${window.totalCalories.toLocaleString('it-IT')} kcal</p>
+			<p id="final-time-display" class="text-2xl font-extrabold text-white mt-4">${document.getElementById('total-timer').textContent}</p><button onclick="window.stopGuidedMode()" class="mt-6 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 transition duration-150 shadow-lg">Torna alla Visualizzazione Completa</button></div>`;
             window.isGuidedMode = false; window.currentExIndex = 0; window.currentSet = 1; isRestPeriodActive = false; document.getElementById('guided-controls-container').classList.add('hidden');
         }
         window.nextStep = nextStep;
