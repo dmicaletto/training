@@ -709,7 +709,7 @@
             stopTotalTimer(); 
 			// NUOVO: Calcola le calorie stimate totali con aggiustamento peso
 			// Utilizza window.userProfile.weight, con fallback a 70 kg se non definito
-			const currentWeight = 50; // window.userProfile.weight > 0 ? window.userProfile.weight : 50;
+			const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 50;
 			window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight);
 			showTemporaryMessage(`Allenamento terminato in ${document.getElementById('total-timer').textContent.split(': ').pop()}!`, 'bg-purple-600');
             document.getElementById('workout-content').innerHTML = `<div class="p-8 text-center bg-gray-700 rounded-xl shadow-2xl"><h2 class="text-4xl font-extrabold text-green-400 mb-4">🏆 ALLENAMENTO COMPLETATO! 🥳</h2>
