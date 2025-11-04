@@ -34,7 +34,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // AGGIORNATO: Aggiunte getDocs, query, orderBy
+		import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; 
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -151,22 +152,17 @@
 		    }
 		
 		    try {
-		        // Ottieni i dati (senza listener, solo una lettura one-time)
-		        const snapshot = await getDoc(historyColRef); 
+		        // CORREZIONE: Usiamo query e orderBy per ottenere i documenti ordinati.
+		        // Ordina per data (decrescente) e ora di fine (decrescente)
+		        const historyQuery = query(historyColRef, orderBy("date", "desc"), orderBy("endTime", "desc"));
+		        
+		        // CORREZIONE: Usa getDocs (per collezioni/query) al posto di getDoc
+		        const querySnapshot = await getDocs(historyQuery); 
+		        
 		        const historyData = [];
-		
-		        // Firestore non supporta getDoc su una collezione, usiamo la query standard:
-		        const querySnapshot = await collection(window.db, historyColRef.path).get(); 
 		
 		        querySnapshot.forEach(doc => {
 		            historyData.push({ id: doc.id, ...doc.data() });
-		        });
-		
-		        // Ordina per data/ora (assumiamo che doc.id sia l'timestamp implicito o li ordiniamo per il campo date)
-		        historyData.sort((a, b) => {
-		            if (a.date < b.date) return 1;
-		            if (a.date > b.date) return -1;
-		            return 0;
 		        });
 		
 		        if (historyData.length === 0) {
@@ -176,6 +172,11 @@
 		
 		        let html = '';
 		        historyData.forEach(log => {
+		            // Assicurati che i dati siano definiti in caso di record vecchi
+		            const totalTonnage = log.totalTonnage ? log.totalTonnage.toLocaleString('it-IT') : '0';
+		            const estimatedCalories = log.estimatedCalories ? log.estimatedCalories.toLocaleString('it-IT') : '0';
+		            const durationDisplay = log.durationDisplay || 'N/A';
+		
 		            html += `
 		                <div class="bg-gray-700 p-4 rounded-lg border border-gray-600 shadow-md">
 		                    <div class="flex justify-between items-center border-b border-gray-500 pb-2 mb-2">
@@ -183,9 +184,9 @@
 		                        <span class="text-sm text-gray-400">${log.date} (${log.startTime} - ${log.endTime})</span>
 		                    </div>
 		                    <div class="grid grid-cols-3 gap-4 text-sm">
-		                        <p>💪 Volume Totale: <span class="font-bold text-white">${log.totalTonnage.toLocaleString('it-IT')} kg</span></p>
-		                        <p>🔥 Calorie Stimate: <span class="font-bold text-red-400">${log.estimatedCalories.toLocaleString('it-IT')} kcal</span></p>
-		                        <p>🕒 Durata: <span class="font-bold text-white">${log.durationDisplay}</span></p>
+		                        <p>💪 Volume Totale: <span class="font-bold text-white">${totalTonnage} kg</span></p>
+		                        <p>🔥 Calorie Stimate: <span class="font-bold text-red-400">${estimatedCalories} kcal</span></p>
+		                        <p>🕒 Durata: <span class="font-bold text-white">${durationDisplay}</span></p>
 		                    </div>
 		                </div>
 		            `;
