@@ -707,7 +707,7 @@
                 window.currentExIndex = nextExIndex; window.currentSet = 1; showTemporaryMessage(`Esercizio successivo: ${dayData.exercises[nextExIndex].name}.`, 'bg-green-600'); renderGuidedMode(); return;
             }
             stopTotalTimer(); 
-			/ *** NUOVO: Calcola le calorie stimate totali con aggiustamento peso ***/
+			// NUOVO: Calcola le calorie stimate totali con aggiustamento peso
 			// Utilizza window.userProfile.weight, con fallback a 70 kg se non definito
 			const currentWeight = 50; // window.userProfile.weight > 0 ? window.userProfile.weight : 50;
 			window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight);
