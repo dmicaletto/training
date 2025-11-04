@@ -633,16 +633,29 @@
             if (timerElement) { timerElement.textContent = `Durata finale: ${finalTime}`; timerElement.classList.remove('text-lg'); timerElement.classList.add('font-extrabold', 'text-xl'); }
         }
 		/**
-		 * Stima le calorie bruciate per l'allenamento con i pesi basandosi sul tonnellaggio totale.
+		 * Stima le calorie bruciate per l'allenamento con i pesi, aggiustata al peso corporeo.
 		 * @param {number} totalTonnage - Tonnellaggio totale in kg.
+		 * @param {number} bodyWeight - Peso corporeo dell'utente in kg (da window.userProfile).
 		 * @returns {number} Calorie stimate.
 		 */
-		function estimateWeightCalories(totalTonnage) {
-		    // Fattore di conversione: 3.5 calorie per 1000 kg (1 tonnellata metrica).
-		    // Questo è un fattore di stima generale.
-		    const CAL_PER_TON = 3.5;
+		function estimateWeightCalories(totalTonnage, bodyWeight) {
+		    if (totalTonnage <= 0 || bodyWeight <= 0) return 0;
+		    
+		    // Fattore Base di Conversione Calorie per Tonnellata
+		    // Usiamo 3.5 Calorie / tonnellata come punto di partenza.
+		    const CAL_PER_TON_BASE = 3.5; 
+		    const REFERENCE_WEIGHT = 70; // Peso di riferimento standard (70 kg)
+		
+		    // Aggiustamento: Il fattore viene scalato in base al peso dell'utente rispetto al peso di riferimento.
+		    const adjustedFactor = CAL_PER_TON_BASE * (bodyWeight / REFERENCE_WEIGHT);
+		    
 		    const tonnageInTons = totalTonnage / 1000;
-		    return Math.round(tonnageInTons * CAL_PER_TON * 10) / 10; // Arrotonda a 1 decimale
+		    
+		    // Calcolo: Tonnellate * Fattore Aggiustato
+		    let estimatedCalories = tonnageInTons * adjustedFactor;
+		    
+		    // Arrotonda a 1 decimale
+		    return Math.round(estimatedCalories * 10) / 10;
 		}
 		window.estimateWeightCalories = estimateWeightCalories;
         function terminateRest(dayId, exIndex) { /* ... codice invariato ... */
@@ -694,8 +707,10 @@
                 window.currentExIndex = nextExIndex; window.currentSet = 1; showTemporaryMessage(`Esercizio successivo: ${dayData.exercises[nextExIndex].name}.`, 'bg-green-600'); renderGuidedMode(); return;
             }
             stopTotalTimer(); 
-			// *** NUOVO: Calcola le calorie stimate totali ***
-			window.totalCalories = estimateWeightCalories(window.totalTonnage);
+			/ *** NUOVO: Calcola le calorie stimate totali con aggiustamento peso ***
+			// Utilizza window.userProfile.weight, con fallback a 70 kg se non definito
+			const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 70;
+			window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight);
 			showTemporaryMessage(`Allenamento terminato in ${document.getElementById('total-timer').textContent.split(': ').pop()}!`, 'bg-purple-600');
             document.getElementById('workout-content').innerHTML = `<div class="p-8 text-center bg-gray-700 rounded-xl shadow-2xl"><h2 class="text-4xl font-extrabold text-green-400 mb-4">🏆 ALLENAMENTO COMPLETATO! 🥳</h2>
 			<p class="text-xl text-gray-300">Complimenti! Hai completato tutti gli esercizi per ${dayData.name}.</p>
