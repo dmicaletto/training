@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Piano di allenamento per Laura Corridoni</title>
     <script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <style>
         /* Stile di base e font Inter */
         body {
@@ -221,7 +222,14 @@
 		            `;
 		        });
 		
-		        historyContentDiv.innerHTML = html;
+		        // historyContentDiv.innerHTML = html;
+				// Ultima riga del blocco try:
+                historyContentDiv.innerHTML = chartHtml + listHtml; // Combina grafico e lista
+                
+                // *** NUOVA CHIAMATA: Avvia il rendering del grafico ***
+                if (chartData.filter(d => d.hasWorkout).length > 0) {
+                    renderWeeklyChart();
+                }
 		
 		    } catch (error) {
 		        console.error("Errore nel caricamento dello storico:", error);
@@ -798,6 +806,94 @@
             document.getElementById('day-tabs').classList.remove('hidden'); document.getElementById('mode-toggle-button').classList.remove('hidden');
             document.getElementById('guided-controls-container').classList.add('hidden'); renderDay(window.activeDay);
         }
+		/**
+		 * Disegna il grafico settimanale utilizzando Chart.js
+		 */
+		function renderWeeklyChart() {
+		    const dataDumpElement = document.getElementById('chart-data-dump');
+		    const canvasElement = document.getElementById('weeklyChart');
+		
+		    if (!dataDumpElement || !canvasElement) return;
+		
+		    try {
+		        const rawData = JSON.parse(dataDumpElement.value);
+		        
+		        // Filtra e prepara i dati per gli assi
+		        const days = rawData.map(d => d.day);
+		        const tonnageValues = rawData.map(d => d.totalTonnage);
+		        const calorieValues = rawData.map(d => d.totalCalories);
+		
+		        // Se Chart.js è caricato
+		        if (typeof Chart !== 'undefined') {
+		            new Chart(canvasElement, {
+		                type: 'bar',
+		                data: {
+		                    labels: days,
+		                    datasets: [
+		                        {
+		                            type: 'bar',
+		                            label: 'Tonnellaggio (kg)',
+		                            data: tonnageValues,
+		                            backgroundColor: 'rgba(59, 130, 246, 0.8)', // Blu
+		                            borderColor: 'rgba(59, 130, 246, 1)',
+		                            borderWidth: 1,
+		                            yAxisID: 'y-tonnage',
+		                            order: 2,
+		                        },
+		                        {
+		                            type: 'line',
+		                            label: 'Calorie (kcal)',
+		                            data: calorieValues,
+		                            borderColor: 'rgba(239, 68, 68, 1)', // Rosso
+		                            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+		                            fill: true,
+		                            yAxisID: 'y-calories',
+		                            order: 1,
+		                            tension: 0.4
+		                        }
+		                    ]
+		                },
+		                options: {
+		                    responsive: true,
+		                    maintainAspectRatio: false,
+		                    scales: {
+		                        x: {
+		                            ticks: { color: 'white' },
+		                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+		                        },
+		                        'y-tonnage': {
+		                            type: 'linear',
+		                            position: 'left',
+		                            title: { display: true, text: 'Tonnellaggio (kg)', color: 'white' },
+		                            ticks: { color: 'white' },
+		                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+		                            min: 0,
+		                            suggestedMax: Math.max(...tonnageValues) * 1.2 || 1000 // Aumenta il massimo per leggibilità
+		                        },
+		                        'y-calories': {
+		                            type: 'linear',
+		                            position: 'right',
+		                            title: { display: true, text: 'Calorie (kcal)', color: 'white' },
+		                            ticks: { color: 'white' },
+		                            grid: { drawOnChartArea: false }, // Disegna solo per l'asse Tonnellaggio
+		                            min: 0
+		                        }
+		                    },
+		                    plugins: {
+		                        legend: { labels: { color: 'white' } }
+		                    }
+		                }
+		            });
+		            // Nascondi l'elemento temporaneo di caricamento
+		            document.getElementById('weekly-chart-container').classList.remove('min-h-[250px]');
+		        } else {
+		             console.error("Chart.js non è definito. Assicurati che il CDN sia caricato correttamente.");
+		        }
+		
+		    } catch (e) {
+		        console.error("Errore durante il parsing o il rendering del grafico:", e);
+		    }
+		}
 		async function logWorkoutHistory(dayName) {
 		    const historyColRef = getHistoryCollectionRef();
 		    if (!historyColRef) return;
