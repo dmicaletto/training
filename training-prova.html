@@ -120,9 +120,27 @@
             },
         };
 
-        // --- FUNZIONI DI GESTIONE MODALE ---
+        // --- FUNZIONI DI GESTIONE MENU & MODALE ---
+
+        // CORREZIONE: Definizione delle funzioni di controllo del menu
+        function openMenu() {
+            document.getElementById('off-canvas-menu').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('off-canvas-menu').classList.add('active');
+            }, 10); 
+        }
+        window.openMenu = openMenu;
+
+        function closeMenu() {
+            document.getElementById('off-canvas-menu').classList.remove('active');
+            setTimeout(() => {
+                document.getElementById('off-canvas-menu').classList.add('hidden');
+            }, 300); 
+        }
+        window.closeMenu = closeMenu;
 
         function openProfileModal() {
+            closeMenu(); // Chiude il menu laterale
             const modal = document.getElementById('profile-modal');
             modal.classList.remove('hidden');
             renderProfileContent(); // Chiama la funzione di rendering dinamica
@@ -133,6 +151,19 @@
             document.getElementById('profile-modal').classList.add('hidden');
         }
         window.closeProfileModal = closeProfileModal;
+
+        function openHistoryModal() {
+            closeMenu(); // Chiude il menu laterale
+            const modal = document.getElementById('history-modal');
+            modal.classList.remove('hidden');
+            loadAndRenderHistory(); // Avvia il caricamento dei dati
+        }
+        window.openHistoryModal = openHistoryModal;
+
+        function closeHistoryModal() {
+            document.getElementById('history-modal').classList.add('hidden');
+        }
+        window.closeHistoryModal = closeHistoryModal;
 
         /**
          * Renderizza il contenuto dinamico della modale profilo.
