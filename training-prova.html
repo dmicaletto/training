@@ -442,6 +442,42 @@
                 renderDay(window.activeDay);
             }
         }
+		
+        function startDataListener(dayId) { /* ... codice invariato ... */ 
+            if (!window.db || !window.userId || !window.isPersistenceEnabled) return;
+            if (window.unsubscribeListener) { window.unsubscribeListener(); }
+            const docRef = getLogDocumentRef(dayId);
+            if (!docRef) return;
+            window.unsubscribeListener = onSnapshot(docRef, (docSnap) => {
+                const currentDay = window.workoutDays[dayId];
+                if (!currentDay) return;
+                if (docSnap.exists()) {
+                    const loggedData = docSnap.data();
+                    if (loggedData.exercises) {
+                        currentDay.exercises = currentDay.exercises.map((exercise, exIndex) => {
+                            const loggedExercise = loggedData.exercises[exIndex];
+                            return {
+                                ...exercise,
+                                logged_weights: loggedExercise && loggedExercise.logged_weights ? loggedExercise.logged_weights : {},
+                                logged_notes: loggedExercise && loggedExercise.logged_notes ? loggedExercise.logged_notes : "", 
+                            };
+                        });
+                    }
+                } else {
+                    currentDay.exercises = currentDay.exercises.map(exercise => ({ ...exercise, logged_weights: {}, logged_notes: "", }));
+                }
+                if (window.isGuidedMode) {
+                    renderGuidedMode();
+                } else {
+                    renderDay(dayId);
+                    calculateTotalTonnageForDay(dayId);
+                    updateTonnageDisplay();
+                }
+            }, (error) => {
+                console.error("Errore onSnapshot:", error);
+                document.getElementById('status-message').textContent = 'Errore nel caricamento dei dati in tempo reale.';
+            });
+        }
         
         /**
          * Salva una singola voce di peso su Firestore.
