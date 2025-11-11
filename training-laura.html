@@ -182,68 +182,120 @@
 		        return;
 		    }
 		
-		    try {
-		        // CORREZIONE: Usiamo query e orderBy per ottenere i documenti ordinati.
-		        // Ordina per data (decrescente) e ora di fine (decrescente)
-		        const historyQuery = query(historyColRef, orderBy("date", "desc"), orderBy("endTime", "desc"));
-		        
-		        // CORREZIONE: Usa getDocs (per collezioni/query) al posto di getDoc
-		        const querySnapshot = await getDocs(historyQuery); 
-		        
-		        const historyData = [];
-		
-		        querySnapshot.forEach(doc => {
-		            historyData.push({ id: doc.id, ...doc.data() });
-		        });
-		
-		        if (historyData.length === 0) {
-		            historyContentDiv.innerHTML = '<p class="text-center text-gray-400 p-8">Nessun allenamento trovato nello storico.</p>';
-		            return;
-		        }
-		
-		        let listHtml = '';
-		        historyData.forEach(log => {
-		            // Assicurati che i dati siano definiti in caso di record vecchi
-		            const totalTonnage = log.totalTonnage ? log.totalTonnage.toLocaleString('it-IT') : '0';
-		            const estimatedCalories = log.estimatedCalories ? log.estimatedCalories.toLocaleString('it-IT') : '0';
-		            const durationDisplay = log.durationDisplay || 'N/A';
-					let starsHtml = '';
-				    const rating = log.rating || 0;
-				    for (let i = 1; i <= 5; i++) {
-				      starsHtml += `<span class="text-xs ${i <= rating ? 'text-yellow-400' : 'text-gray-500'}">&#9733;</span>`;
-				    }
-					listHtml += `
-					    <div class="bg-gray-700 p-4 rounded-lg border border-gray-600 shadow-md">
-					        <div class="flex justify-between items-center border-b border-gray-500 pb-2 mb-2">
-					            <h4 class="text-xl font-bold text-blue-300">${log.dayName}</h4>
-					            <div>
-					                <span class-"text-sm text-gray-400 block text-right">${log.date} (${log.startTime} - ${log.endTime})</span>
-					                <div class="mt-1 text-right">${starsHtml}</div>
-					            </div>
-					        </div>
-		                    <div class="grid grid-cols-3 gap-4 text-sm">
-		                        <p>💪 Volume Totale: <span class="font-bold text-white">${totalTonnage} kg</span></p>
-		                        <p>🔥 Calorie Stimate: <span class="font-bold text-red-400">${estimatedCalories} kcal</span></p>
-		                        <p>🕒 Durata: <span class="font-bold text-white">${durationDisplay}</span></p>
-		                    </div>
-		                </div>
-		            `;
-		        });
-		
-		        // historyContentDiv.innerHTML = html;
-				// Ultima riga del blocco try:
-                historyContentDiv.innerHTML = listHtml; 
-                
-                // *** NUOVA CHIAMATA: Avvia il rendering del grafico ***
-				/*  commentato in attesa di modifiche
-                if (chartData.filter(d => d.hasWorkout).length > 0) {
-                    renderWeeklyChart();
-                }
-				*/
-		    } catch (error) {
-		        console.error("Errore nel caricamento dello storico:", error);
-		        historyContentDiv.innerHTML = `<p class="text-center text-red-500 p-8">Impossibile caricare lo storico: ${error.message}.</p>`;
-		    }
+			try {
+			    // CORREZIONE: Usiamo query e orderBy per ottenere i documenti ordinati.
+			    // Ordina per data (decrescente)
+			    const historyQuery = query(historyColRef, orderBy("date", "desc"), orderBy("endTime", "desc"));
+			
+			    const querySnapshot = await getDocs(historyQuery); 
+			
+			    const historyData = [];
+			    querySnapshot.forEach(doc => {
+			        historyData.push({ id: doc.id, ...doc.data() });
+			    });
+			
+			    // --- Preparazione Dati Grafico (NUOVO E CORRETTO) ---
+			    const last7Days = [];
+			    const dayLabels = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+			    const today = new Date();
+			
+			    for (let i = 6; i >= 0; i--) {
+			        const d = new Date(today);
+			        d.setDate(today.getDate() - i);
+			        last7Days.push({
+			            dateString: d.toISOString().split('T')[0],
+			            dayLabel: dayLabels[d.getDay()],
+			            totalTonnage: 0,
+			            totalCalories: 0,
+			            hasWorkout: false
+			        });
+			    }
+			
+			    // --- Inizio HTML Lista ---
+			    let listHtml = '<div class="mt-8 pt-4 border-t border-gray-600"><h4 class="text-xl font-bold text-white mb-4">Lista Allenamenti Recenti</h4><div class="space-y-4">';
+			    let hasRecentHistory = false;
+			
+			    historyData.forEach(log => {
+			        hasRecentHistory = true;
+			        // Assicurati che i dati siano definiti
+			        const totalTonnage = log.totalTonnage ? log.totalTonnage : 0;
+			        const estimatedCalories = log.estimatedCalories ? log.estimatedCalories : 0;
+			        const durationDisplay = log.durationDisplay || 'N/A';
+			        const rating = log.rating || 0;
+			
+			        // Popolamento dati grafico
+			        const dayData = last7Days.find(d => d.dateString === log.date);
+			        if (dayData) {
+			            dayData.totalTonnage += totalTonnage;
+			            dayData.totalCalories += estimatedCalories;
+			            dayData.hasWorkout = true;
+			        }
+			
+			        // Genera stelle per la lista
+			        let starsHtml = '';
+			        for (let i = 1; i <= 5; i++) {
+			            starsHtml += `<span class="text-xs ${i <= rating ? 'text-yellow-400' : 'text-gray-500'}">&#9733;</span>`;
+			        }
+			
+			        // Creazione HTML per la lista
+			        listHtml += `
+			            <div class="bg-gray-700 p-4 rounded-lg border border-gray-600 shadow-md">
+			                <div class="flex justify-between items-start border-b border-gray-500 pb-2 mb-2">
+			                    <h4 class="text-xl font-bold text-blue-300">${log.dayName}</h4>
+			                    <div class="text-right">
+			                        <span class="text-sm text-gray-400 block">${log.date} (${log.startTime} - ${log.endTime})</span>
+			                        <div class="mt-1">${starsHtml}</div>
+			                    </div>
+			                </div>
+			                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+			                    <p>💪 Volume Totale: <span class="font-bold text-white">${totalTonnage.toLocaleString('it-IT')} kg</span></p>
+			                    <p>🔥 Calorie Stimate: <span class="font-bold text-red-400">${estimatedCalories.toLocaleString('it-IT')} kcal</span></p>
+			                    <p>🕒 Durata: <span class="font-bold text-white">${durationDisplay}</span></p>
+			                </div>
+			            </div>
+			        `;
+			    });
+			
+			    if (!hasRecentHistory) {
+			         listHtml += '<p class="text-center text-gray-400 p-8">Nessun allenamento trovato nello storico.</p>';
+			    }
+			    listHtml += '</div></div>'; // Chiusura space-y-4 e div lista
+			
+			    // --- Preparazione Dati e HTML Grafico ---
+			    const chartDataForJson = last7Days.map(d => ({
+			        day: d.dayLabel,
+			        totalTonnage: d.totalTonnage,
+			        totalCalories: d.totalCalories,
+			        hasWorkout: d.hasWorkout
+			    }));
+			
+			    let chartHtml = `
+			        <div>
+			            <h4 class="text-xl font-bold text-white mb-4">Statistiche Ultimi 7 Giorni</h4>
+			            <div id="weekly-chart-container" class="relative h-64 md:h-80 min-h-[250px] p-4 bg-gray-700 rounded-lg">
+			                <canvas id="weeklyChart"></canvas>
+			            </div>
+			            <!-- Usiamo un input hidden per passare i dati JSON alla funzione di rendering del grafico -->
+			            <textarea id="chart-data-dump" class="hidden">${JSON.stringify(chartDataForJson)}</textarea>
+			        </div>
+			    `;
+			
+			    // Se non ci sono dati NEGLI ULTIMI 7 GIORNI, mostra un messaggio nel grafico
+			    const hasDataForChart = chartDataForJson.some(d => d.hasWorkout);
+			
+			    // Combina Grafico e Lista
+			    historyContentDiv.innerHTML = chartHtml + listHtml;
+			
+			    if (hasDataForChart) {
+			        renderWeeklyChart();
+			    } else {
+			        document.getElementById('weekly-chart-container').innerHTML = '<p class="text-center text-gray-400 p-8 flex items-center justify-center h-full">Nessun allenamento negli ultimi 7 giorni per il grafico.</p>';
+			    }
+			
+			} catch (error) {
+			    console.error("Errore nel caricamento dello storico:", error);
+			    historyContentDiv.innerHTML = `<p class="text-center text-red-500 p-8">Impossibile caricare lo storico: ${error.message}.</p>`;
+			}
 		}
 		
         /**
@@ -840,6 +892,19 @@
 		 * Disegna il grafico settimanale utilizzando Chart.js
 		 */
 		function renderWeeklyChart() {
+			const canvasElement = document.getElementById('weeklyChart');
+			if (!canvasElement) {
+			    console.warn("Elemento Canvas 'weeklyChart' non trovato.");
+			    return;
+			}
+			
+			// --- NUOVO: Distrugge il grafico precedente se esiste ---
+			const existingChart = Chart.getChart(canvasElement);
+			if (existingChart) {
+			    existingChart.destroy();
+			}
+			// --- FINE NUOVO CODICE ---
+
 		    const dataDumpElement = document.getElementById('chart-data-dump');
 		    const canvasElement = document.getElementById('weeklyChart');
 		
@@ -906,7 +971,8 @@
 		                            title: { display: true, text: 'Calorie (kcal)', color: 'white' },
 		                            ticks: { color: 'white' },
 		                            grid: { drawOnChartArea: false }, // Disegna solo per l'asse Tonnellaggio
-		                            min: 0
+		                            min: 0,
+									suggestedMax: Math.max(...calorieValues) > 0 ? Math.max(...calorieValues) * 1.2 : 100 // <-- AGGIUNGI QUESTO
 		                        }
 		                    },
 		                    plugins: {
