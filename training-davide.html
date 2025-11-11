@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Piano di allenamento per Laura Corridoni</title>
     <script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <style>
         /* Stile di base e font Inter */
         body {
@@ -30,11 +31,20 @@
         .modal.hidden .modal-content {
             transform: translateY(-50px);
         }
+		/* STILI AGGIUNTIVI PER MENU LATERALE */
+        .off-canvas {
+            transform: translateX(100%);
+            transition: transform 0.3s ease-out;
+        }
+        .off-canvas.active {
+            transform: translateX(0);
+        }
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // AGGIORNATO: Aggiunte getDocs, query, orderBy
+		import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, query, orderBy, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; 
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -58,6 +68,7 @@
         window.totalTonnage = 0; 
         window.exerciseTonnageMap = {}; 
 		window.totalCalories = 0; // NUOVO: Calorie totali stimate
+		window.currentWorkoutRating = 0; // Per la valutazione (da 1 a 5)
         
         // DATI DEL PROFILO UTENTE
         window.userProfile = {
@@ -110,21 +121,183 @@
                 ]
             },
         };
+		// NUOVE FUNZIONI: Controllo Menu Laterale (Off-Canvas)
+		function openMenu() {
+		    document.getElementById('off-canvas-menu').classList.remove('hidden');
+		    // Forziamo il reflow e poi attiviamo la transizione
+		    setTimeout(() => {
+		        document.getElementById('off-canvas-menu').classList.add('active');
+		    }, 10); 
+		}
+		window.openMenu = openMenu;
+		
+		function closeMenu() {
+		    document.getElementById('off-canvas-menu').classList.remove('active');
+		    // Aspetta che l'animazione finisca (0.3s) prima di nascondere completamente
+		    setTimeout(() => {
+		        document.getElementById('off-canvas-menu').classList.add('hidden');
+		    }, 300); 
+		}
+		window.closeMenu = closeMenu;
+		
+		// ... (Le funzioni openProfileModal, closeProfileModal, openHistoryModal, closeHistoryModal restano come sono, ma verranno chiamate dal menu)
+		// --- Riscriviamo openHistoryModal e openProfileModal per chiudere il menu ---
+		function openProfileModal() {
+		    closeMenu(); // Chiude il menu laterale
+		    const modal = document.getElementById('profile-modal');
+		    modal.classList.remove('hidden');
+		    renderProfileContent();
+		}
+		window.openProfileModal = openProfileModal;
+		
+		function openHistoryModal() {
+		    closeMenu(); // Chiude il menu laterale
+		    const modal = document.getElementById('history-modal');
+		    modal.classList.remove('hidden');
+		    loadAndRenderHistory(); // Avvia il caricamento dei dati
+		}
+		window.openHistoryModal = openHistoryModal;
+		
+		function closeProfileModal() {
+		    document.getElementById('profile-modal').classList.add('hidden');
+		}
+		window.closeProfileModal = closeProfileModal;
+		
+		function closeHistoryModal() {
+		    document.getElementById('history-modal').classList.add('hidden');
+		}
+		window.closeHistoryModal = closeHistoryModal;
 
-        // --- FUNZIONI DI GESTIONE MODALE ---
 
-        function openProfileModal() {
-            const modal = document.getElementById('profile-modal');
-            modal.classList.remove('hidden');
-            renderProfileContent(); // Chiama la funzione di rendering dinamica
-        }
-        window.openProfileModal = openProfileModal;
-
-        function closeProfileModal() {
-            document.getElementById('profile-modal').classList.add('hidden');
-        }
-        window.closeProfileModal = closeProfileModal;
-
+		/**
+		 * Carica lo storico degli allenamenti da Firestore e lo renderizza.
+		 */
+		async function loadAndRenderHistory() {
+		    const historyColRef = getHistoryCollectionRef();
+		    const historyContentDiv = document.getElementById('history-content');
+		    historyContentDiv.innerHTML = '<p class="text-center text-yellow-400">Caricamento storico in corso...</p>';
+		    
+		    if (!historyColRef) {
+		        historyContentDiv.innerHTML = '<p class="text-center text-red-500">Errore: Persistenza non attiva o utente non loggato.</p>';
+		        return;
+		    }
+		
+			try {
+			    // CORREZIONE: Usiamo query e orderBy per ottenere i documenti ordinati.
+			    // Ordina per data (decrescente)
+			    const historyQuery = query(historyColRef, orderBy("date", "desc"), orderBy("endTime", "desc"));
+			
+			    const querySnapshot = await getDocs(historyQuery); 
+			
+			    const historyData = [];
+			    querySnapshot.forEach(doc => {
+			        historyData.push({ id: doc.id, ...doc.data() });
+			    });
+			
+			    // --- Preparazione Dati Grafico (NUOVO E CORRETTO) ---
+			    const last7Days = [];
+			    const dayLabels = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+			    const today = new Date();
+			
+			    for (let i = 6; i >= 0; i--) {
+			        const d = new Date(today);
+			        d.setDate(today.getDate() - i);
+			        last7Days.push({
+			            dateString: d.toISOString().split('T')[0],
+			            dayLabel: dayLabels[d.getDay()],
+			            totalTonnage: 0,
+			            totalCalories: 0,
+			            hasWorkout: false
+			        });
+			    }
+			
+			    // --- Inizio HTML Lista ---
+			    let listHtml = '<div class="mt-8 pt-4 border-t border-gray-600"><h4 class="text-xl font-bold text-white mb-4">Lista Allenamenti Recenti</h4><div class="space-y-4">';
+			    let hasRecentHistory = false;
+			
+			    historyData.forEach(log => {
+			        hasRecentHistory = true;
+			        // Assicurati che i dati siano definiti
+			        const totalTonnage = log.totalTonnage ? log.totalTonnage : 0;
+			        const estimatedCalories = log.estimatedCalories ? log.estimatedCalories : 0;
+			        const durationDisplay = log.durationDisplay || 'N/A';
+			        const rating = log.rating || 0;
+			
+			        // Popolamento dati grafico
+			        const dayData = last7Days.find(d => d.dateString === log.date);
+			        if (dayData) {
+			            dayData.totalTonnage += totalTonnage;
+			            dayData.totalCalories += estimatedCalories;
+			            dayData.hasWorkout = true;
+			        }
+			
+			        // Genera stelle per la lista
+			        let starsHtml = '';
+			        for (let i = 1; i <= 5; i++) {
+			            starsHtml += `<span class="text-xs ${i <= rating ? 'text-yellow-400' : 'text-gray-500'}">&#9733;</span>`;
+			        }
+			
+			        // Creazione HTML per la lista
+			        listHtml += `
+			            <div class="bg-gray-700 p-4 rounded-lg border border-gray-600 shadow-md">
+			                <div class="flex justify-between items-start border-b border-gray-500 pb-2 mb-2">
+			                    <h4 class="text-xl font-bold text-blue-300">${log.dayName}</h4>
+			                    <div class="text-right">
+			                        <span class="text-sm text-gray-400 block">${log.date} (${log.startTime} - ${log.endTime})</span>
+			                        <div class="mt-1">${starsHtml}</div>
+			                    </div>
+			                </div>
+			                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+			                    <p>💪 Volume Totale: <span class="font-bold text-white">${totalTonnage.toLocaleString('it-IT')} kg</span></p>
+			                    <p>🔥 Calorie Stimate: <span class="font-bold text-red-400">${estimatedCalories.toLocaleString('it-IT')} kcal</span></p>
+			                    <p>🕒 Durata: <span class="font-bold text-white">${durationDisplay}</span></p>
+			                </div>
+			            </div>
+			        `;
+			    });
+			
+			    if (!hasRecentHistory) {
+			         listHtml += '<p class="text-center text-gray-400 p-8">Nessun allenamento trovato nello storico.</p>';
+			    }
+			    listHtml += '</div></div>'; // Chiusura space-y-4 e div lista
+			
+			    // --- Preparazione Dati e HTML Grafico ---
+			    const chartDataForJson = last7Days.map(d => ({
+			        day: d.dayLabel,
+			        totalTonnage: d.totalTonnage,
+			        totalCalories: d.totalCalories,
+			        hasWorkout: d.hasWorkout
+			    }));
+			
+			    let chartHtml = `
+			        <div>
+			            <h4 class="text-xl font-bold text-white mb-4">Statistiche Ultimi 7 Giorni</h4>
+			            <div id="weekly-chart-container" class="relative h-64 md:h-80 min-h-[250px] p-4 bg-gray-700 rounded-lg">
+			                <canvas id="weeklyChart"></canvas>
+			            </div>
+			            <!-- Usiamo un input hidden per passare i dati JSON alla funzione di rendering del grafico -->
+			            <textarea id="chart-data-dump" class="hidden">${JSON.stringify(chartDataForJson)}</textarea>
+			        </div>
+			    `;
+			
+			    // Se non ci sono dati NEGLI ULTIMI 7 GIORNI, mostra un messaggio nel grafico
+			    const hasDataForChart = chartDataForJson.some(d => d.hasWorkout);
+			
+			    // Combina Grafico e Lista
+			    historyContentDiv.innerHTML = chartHtml + listHtml;
+			
+			    if (hasDataForChart) {
+			        renderWeeklyChart();
+			    } else {
+			        document.getElementById('weekly-chart-container').innerHTML = '<p class="text-center text-gray-400 p-8 flex items-center justify-center h-full">Nessun allenamento negli ultimi 7 giorni per il grafico.</p>';
+			    }
+			
+			} catch (error) {
+			    console.error("Errore nel caricamento dello storico:", error);
+			    historyContentDiv.innerHTML = `<p class="text-center text-red-500 p-8">Impossibile caricare lo storico: ${error.message}.</p>`;
+			}
+		}
+		
         /**
          * Renderizza il contenuto dinamico della modale profilo.
          */
@@ -178,6 +351,27 @@
             `;
         }
 
+		/**
+		 * Imposta la valutazione (da 1 a 5) e aggiorna l'UI delle stelle.
+		 */
+		function setRating(rating) {
+		    window.currentWorkoutRating = rating;
+		    const stars = document.querySelectorAll('.rating-star');
+		    stars.forEach((star, index) => {
+		        if (index < rating) {
+		            // Stella piena (gialla)
+		            star.classList.remove('text-gray-600');
+		            star.classList.add('text-yellow-400');
+		            star.innerHTML = '&#9733;'; // Stella piena
+		        } else {
+		            // Stella vuota (grigia)
+		            star.classList.remove('text-yellow-400');
+		            star.classList.add('text-gray-600');
+		            star.innerHTML = '&#9734;'; // Stella vuota
+		        }
+		    });
+		}
+		window.setRating = setRating;
         // --- GESTIONE DATI UTENTE E FIRESTORE ---
 
         function getLogDocumentRef(dayId) {
@@ -200,7 +394,13 @@
                        'data' // Nome del documento
                    ); 
         }
-
+		// NUOVA FUNZIONE: Riferimento alla collezione dello storico
+		function getHistoryCollectionRef() {
+		    if (!window.userId || !window.db || !window.isPersistenceEnabled) return null;
+		    const appId = window.appId || 'default-app-id'; 
+		    // Percorso: artifacts/{appId}/users/{userId}/workout_history
+		    return collection(window.db, `artifacts/${appId}/users/${window.userId}/workout_history`);
+		}
         /**
          * Carica il profilo utente da Firestore o usa i default, poi aggiorna il titolo.
          */
@@ -287,7 +487,7 @@
             if (titleElement) {
                 // Usiamo Nome e Cognome combinati
                 const displayName = window.userProfile.name || window.userProfile.surname ? `${window.userProfile.name} ${window.userProfile.surname}` : 'Utente';
-                titleElement.textContent = `💪 Piano di allenamento ${displayName}`;
+                titleElement.textContent = `💪 Piano di allenamento`;
             }
         }
 
@@ -688,6 +888,134 @@
             document.getElementById('day-tabs').classList.remove('hidden'); document.getElementById('mode-toggle-button').classList.remove('hidden');
             document.getElementById('guided-controls-container').classList.add('hidden'); renderDay(window.activeDay);
         }
+		/**
+		 * Disegna il grafico settimanale utilizzando Chart.js
+		 */
+		function renderWeeklyChart() {
+			const canvasElement = document.getElementById('weeklyChart');
+			if (!canvasElement) {
+			    console.warn("Elemento Canvas 'weeklyChart' non trovato.");
+			    return;
+			}
+			
+			// --- NUOVO: Distrugge il grafico precedente se esiste ---
+			const existingChart = Chart.getChart(canvasElement);
+			if (existingChart) {
+			    existingChart.destroy();
+			}
+			// --- FINE NUOVO CODICE ---
+		    const dataDumpElement = document.getElementById('chart-data-dump');
+		
+		    if (!dataDumpElement || !canvasElement) return;
+		
+		    try {
+		        const rawData = JSON.parse(dataDumpElement.value);
+		        
+		        // Filtra e prepara i dati per gli assi
+		        const days = rawData.map(d => d.day);
+		        const tonnageValues = rawData.map(d => d.totalTonnage);
+		        const calorieValues = rawData.map(d => d.totalCalories);
+		
+		        // Se Chart.js è caricato
+		        if (typeof Chart !== 'undefined') {
+		            new Chart(canvasElement, {
+		                type: 'bar',
+		                data: {
+		                    labels: days,
+		                    datasets: [
+		                        {
+		                            type: 'bar',
+		                            label: 'Tonnellaggio (kg)',
+		                            data: tonnageValues,
+		                            backgroundColor: 'rgba(59, 130, 246, 0.8)', // Blu
+		                            borderColor: 'rgba(59, 130, 246, 1)',
+		                            borderWidth: 1,
+		                            yAxisID: 'y-tonnage',
+		                            order: 2,
+		                        },
+		                        {
+		                            type: 'line',
+		                            label: 'Calorie (kcal)',
+		                            data: calorieValues,
+		                            borderColor: 'rgba(239, 68, 68, 1)', // Rosso
+		                            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+		                            fill: true,
+		                            yAxisID: 'y-calories',
+		                            order: 1,
+		                            tension: 0.4
+		                        }
+		                    ]
+		                },
+		                options: {
+		                    responsive: true,
+		                    maintainAspectRatio: false,
+		                    scales: {
+		                        x: {
+		                            ticks: { color: 'white' },
+		                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+		                        },
+		                        'y-tonnage': {
+		                            type: 'linear',
+		                            position: 'left',
+		                            title: { display: true, text: 'Tonnellaggio (kg)', color: 'white' },
+		                            ticks: { color: 'white' },
+		                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+		                            min: 0,
+		                            suggestedMax: Math.max(...tonnageValues) * 1.2 || 1000 // Aumenta il massimo per leggibilità
+		                        },
+		                        'y-calories': {
+		                            type: 'linear',
+		                            position: 'right',
+		                            title: { display: true, text: 'Calorie (kcal)', color: 'white' },
+		                            ticks: { color: 'white' },
+		                            grid: { drawOnChartArea: false }, // Disegna solo per l'asse Tonnellaggio
+		                            min: 0,
+									suggestedMax: Math.max(...calorieValues) > 0 ? Math.max(...calorieValues) * 1.2 : 100 // <-- AGGIUNGI QUESTO
+		                        }
+		                    },
+		                    plugins: {
+		                        legend: { labels: { color: 'white' } }
+		                    }
+		                }
+		            });
+		            // Nascondi l'elemento temporaneo di caricamento
+		            document.getElementById('weekly-chart-container').classList.remove('min-h-[250px]');
+		        } else {
+		             console.error("Chart.js non è definito. Assicurati che il CDN sia caricato correttamente.");
+		        }
+		
+		    } catch (e) {
+		        console.error("Errore durante il parsing o il rendering del grafico:", e);
+		    }
+		}
+		async function logWorkoutHistory(dayName, rating) {
+		    const historyColRef = getHistoryCollectionRef();
+		    if (!historyColRef) return;
+		
+		    const timestamp = new Date();
+		    
+		    const workoutLog = {
+		        date: timestamp.toISOString().split('T')[0], // Data (es. 2025-11-04)
+		        startTime: new Date(timestamp.getTime() - window.totalTimeSeconds * 1000).toLocaleTimeString('it-IT'),
+		        endTime: timestamp.toLocaleTimeString('it-IT'),
+		        durationSeconds: window.totalTimeSeconds,
+		        durationDisplay: `${Math.floor(window.totalTimeSeconds / 3600).toString().padStart(2, '0')}:${Math.floor((window.totalTimeSeconds % 3600) / 60).toString().padStart(2, '0')}:${(window.totalTimeSeconds % 60).toString().padStart(2, '0')}`,
+		        dayName: dayName,
+		        totalTonnage: Math.round(window.totalTonnage),
+		        estimatedCalories: Math.round(window.totalCalories || 0),
+				rating: rating || 0 
+		    };
+		
+		    try {
+		        // Usiamo addDoc per creare un nuovo documento con ID automatico
+		        // await setDoc(doc(historyColRef), workoutLog); 
+				await addDoc(historyColRef, workoutLog);
+		        showTemporaryMessage('Allenamento salvato nello storico!', 'bg-green-600');
+		    } catch (error) {
+		        console.error("Errore nel log dello storico:", error);
+		        showTemporaryMessage(`Errore nel salvataggio storico: ${error.message}`, 'bg-red-500');
+		    }
+		}
         window.stopGuidedMode = stopGuidedMode;
         function nextStep() { /* ... codice invariato ... */
             const dayData = window.workoutDays[window.activeDay]; const currentExercise = dayData.exercises[window.currentExIndex]; const setKey = `set_${window.currentSet}`;
@@ -711,15 +1039,50 @@
 			// Utilizza window.userProfile.weight, con fallback a 70 kg se non definito
 			const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 50;
 			window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight);
+			// *** NUOVA CHIAMATA PER LOGGARE L'ALLENAMENTO ***
+			//logWorkoutHistory(dayData.name); 
+			// ***********************************************
 			showTemporaryMessage(`Allenamento terminato in ${document.getElementById('total-timer').textContent.split(': ').pop()}!`, 'bg-purple-600');
             document.getElementById('workout-content').innerHTML = `<div class="p-8 text-center bg-gray-700 rounded-xl shadow-2xl"><h2 class="text-4xl font-extrabold text-green-400 mb-4">🏆 ALLENAMENTO COMPLETATO! 🥳</h2>
 			<p class="text-xl text-gray-300">Complimenti! Hai completato tutti gli esercizi per ${dayData.name}.</p>
 			<p class="text-2xl font-extrabold text-yellow-400 mt-4">Volume Totale: ${Math.round(window.totalTonnage).toLocaleString('it-IT')} kg</p>
 			<p class="text-2xl font-extrabold text-red-400 mt-2">🔥 Calorie Stimate: ${window.totalCalories.toLocaleString('it-IT')} kcal</p>
-			<p id="final-time-display" class="text-2xl font-extrabold text-white mt-4">${document.getElementById('total-timer').textContent}</p><button onclick="window.stopGuidedMode()" class="mt-6 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 transition duration-150 shadow-lg">Torna alla Visualizzazione Completa</button></div>`;
+			// ...
+			<p id="final-time-display" class="text-2xl font-extrabold text-white mt-4">${document.getElementById('total-timer').textContent}</p>` +
+			
+			`<!-- NUOVO: Selettore Stelle -->` +
+			`<div class="mt-6">` +
+			    `<p class="text-lg text-gray-300 mb-2">Come valuti questo allenamento?</p>` +
+			    `<div class="flex justify-center items-center space-x-2 text-4xl cursor-pointer">` +
+			        `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(1)">&#9734;</span>` +
+			        `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(2)">&#9734;</span>` +
+			        `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(3)">&#9734;</span>` +
+			        `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(4)">&#9734;</span>` +
+			        `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(5)">&#9734;</span>` +
+			    `</div>` +
+			`</div>` +
+			
+			`<!-- MODIFICATO: Bottone Salva e Torna -->` +
+			`<button onclick="window.saveAndExitGuidedMode('${dayData.name}')" class="mt-8 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 transition duration-150 shadow-lg">Salva e Torna</button>` +
+			`</div>`;
             window.isGuidedMode = false; window.currentExIndex = 0; window.currentSet = 1; isRestPeriodActive = false; document.getElementById('guided-controls-container').classList.add('hidden');
         }
         window.nextStep = nextStep;
+		/**
+		 * Salva lo storico (con la valutazione) e esce dalla modalità guidata.
+		 */
+		async function saveAndExitGuidedMode(dayName) {
+		    // 1. Salva i dati, passando la valutazione
+		    await logWorkoutHistory(dayName, window.currentWorkoutRating);
+		    
+		    // 2. Resetta la valutazione per il prossimo allenamento
+		    window.currentWorkoutRating = 0;
+		    
+		    // 3. Chiudi la modalità guidata
+		    window.stopGuidedMode();
+		}
+		window.saveAndExitGuidedMode = saveAndExitGuidedMode;
+		
         function renderGuidedMode() { /* ... codice invariato ... */
             const dayData = window.workoutDays[window.activeDay]; const contentDiv = document.getElementById('workout-content');
             if (window.currentExIndex >= dayData.exercises.length) { nextStep(); return; }
@@ -783,24 +1146,20 @@
 </head>
 <body class="min-h-screen">
     <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-
-        <header class="text-center mb-8 border-b border-gray-700 pb-4 relative">
-            
-            <button onclick="openProfileModal()" class="absolute top-2 right-0 p-2 rounded-full hover:bg-gray-700 transition duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+		<header class="text-center mb-8 border-b border-gray-700 pb-4 relative">
+            <button onclick="openMenu()" class="absolute top-2 right-0 p-2 rounded-full hover:bg-gray-700 transition duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 z-30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
-
             <h1 id="main-title" class="text-4xl font-extrabold text-blue-500 tracking-tight">
                 💪 Piano di allenamento Laura Corridoni
             </h1>
             <p class="text-gray-400 mt-2">Programma di 3 giorni con tracciamento pesi in tempo reale.</p>
         </header>
-
         <div class="mb-6 p-3 bg-gray-900 rounded-xl border border-gray-700 text-center">
             <p id="status-message" class="text-sm font-medium text-green-400">Inizializzazione in corso...</p>
-            <p id="user-id" class="text-xs text-gray-500 mt-1"></p>
+            <p id="user-id" class="text-xs text-gray-500 mt-1 hidden"></p>
         </div>
         
         
@@ -810,13 +1169,13 @@
         <div class="text-center mb-6">
             <button id="mode-toggle-button" onclick="window.startGuidedMode()" 
                     class="px-6 py-3 bg-red-600 text-white font-bold rounded-full shadow-lg hover:bg-red-700 transition duration-150 disabled:opacity-50">
-                🚀 Avvia Allenamento Guidato
+                🚀 Avvia Allenamento
             </button>
             
             <div id="guided-controls-container" class="hidden mt-4 flex flex-col items-center gap-2">
                  <button id="stop-guided-button" onclick="window.stopGuidedMode()" 
                         class="px-6 py-3 bg-yellow-600 text-white font-bold rounded-full shadow-lg hover:bg-yellow-700 transition duration-150">
-                    🛑 Termina Allenamento Guidato
+                    🛑 Termina Allenamento
                 </button>
                 <p id="total-tonnage-display" class="mt-2 text-lg font-mono text-green-400 font-bold hidden">Tonnellaggio: 0 kg</p> 
                 <p id="total-timer" class="mt-3 text-lg font-mono text-white/80">Durata totale: 00:00:00</p>
@@ -853,6 +1212,52 @@
             </div>
         </div>
     </div>
+
+	<div id="history-modal" class="modal fixed inset-0 z-50 bg-gray-900 bg-opacity-80 flex items-center justify-center hidden" 
+         onclick="if(event.target.id === 'history-modal') closeHistoryModal()">
+        
+        <div class="modal-content bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-2xl mx-4 border border-gray-700 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-gray-700 pb-3 mb-4 sticky top-0 bg-gray-800 z-10">
+                <h2 class="text-2xl font-bold text-yellow-400">📜 Storico Allenamenti</h2>
+                <button onclick="closeHistoryModal()" class="text-gray-400 hover:text-white transition duration-150 p-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <div id="history-content" class="space-y-4">
+                <p class="text-center text-gray-500">Caricamento storico...</p>
+            </div>
+
+        </div>
+    </div>
+	<div id="off-canvas-menu" class="fixed inset-0 z-40 hidden" onclick="if(event.target.id === 'off-canvas-menu') closeMenu()">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-80"></div> 
+        
+        <div class="off-canvas active absolute top-0 right-0 w-64 h-full bg-gray-800 shadow-2xl p-6 border-l border-gray-700 flex flex-col">
+            
+            <h3 class="text-2xl font-bold text-blue-400 mb-6 border-b border-gray-700 pb-3">Menu</h3>
+            
+            <div class="space-y-4">
+                <button onclick="openProfileModal()" class="w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600 transition duration-150 text-white font-semibold flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    Profilo Utente
+                </button>
+
+                <button onclick="openHistoryModal()" class="w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600 transition duration-150 text-white font-semibold flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c1.657 0 3 1.343 3 3v2h2v-2c0-2.761-2.239-5-5-5s-5 2.239-5 5v2h2v-2c0-1.657 1.343-3 3-3zM2 20h20M4 17h16" /></svg>
+                    Storico Allenamenti
+                </button>
+                
+                </div>
+            
+            <button onclick="closeMenu()" class="mt-auto px-4 py-2 bg-red-600 text-white font-semibold rounded-full hover:bg-red-700 transition duration-150">
+                Chiudi Menu
+            </button>
+        </div>
+    </div>
 </body>
 </html>
-
+</body>
+</html>
