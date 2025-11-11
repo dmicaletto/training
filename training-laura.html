@@ -44,7 +44,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         // AGGIORNATO: Aggiunte getDocs, query, orderBy
-		import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+		import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, query, orderBy, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; 
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -68,6 +68,7 @@
         window.totalTonnage = 0; 
         window.exerciseTonnageMap = {}; 
 		window.totalCalories = 0; // NUOVO: Calorie totali stimate
+		window.currentWorkoutRating = 0; // Per la valutazione (da 1 a 5)
         
         // DATI DEL PROFILO UTENTE
         window.userProfile = {
@@ -206,13 +207,20 @@
 		            const totalTonnage = log.totalTonnage ? log.totalTonnage.toLocaleString('it-IT') : '0';
 		            const estimatedCalories = log.estimatedCalories ? log.estimatedCalories.toLocaleString('it-IT') : '0';
 		            const durationDisplay = log.durationDisplay || 'N/A';
-		
-		            html += `
-		                <div class="bg-gray-700 p-4 rounded-lg border border-gray-600 shadow-md">
-		                    <div class="flex justify-between items-center border-b border-gray-500 pb-2 mb-2">
-		                        <h4 class="text-xl font-bold text-blue-300">${log.dayName}</h4>
-		                        <span class="text-sm text-gray-400">${log.date} (${log.startTime} - ${log.endTime})</span>
-		                    </div>
+					let starsHtml = '';
+				    const rating = log.rating || 0;
+				    for (let i = 1; i <= 5; i++) {
+				      starsHtml += `<span class="text-xs ${i <= rating ? 'text-yellow-400' : 'text-gray-500'}">&#9733;</span>`;
+				    }
+					listHtml += `
+					    <div class="bg-gray-700 p-4 rounded-lg border border-gray-600 shadow-md">
+					        <div class="flex justify-between items-center border-b border-gray-500 pb-2 mb-2">
+					            <h4 class="text-xl font-bold text-blue-300">${log.dayName}</h4>
+					            <div>
+					                <span class-"text-sm text-gray-400 block text-right">${log.date} (${log.startTime} - ${log.endTime})</span>
+					                <div class="mt-1 text-right">${starsHtml}</div>
+					            </div>
+					        </div>
 		                    <div class="grid grid-cols-3 gap-4 text-sm">
 		                        <p>💪 Volume Totale: <span class="font-bold text-white">${totalTonnage} kg</span></p>
 		                        <p>🔥 Calorie Stimate: <span class="font-bold text-red-400">${estimatedCalories} kcal</span></p>
@@ -290,6 +298,27 @@
             `;
         }
 
+		/**
+		 * Imposta la valutazione (da 1 a 5) e aggiorna l'UI delle stelle.
+		 */
+		function setRating(rating) {
+		    window.currentWorkoutRating = rating;
+		    const stars = document.querySelectorAll('.rating-star');
+		    stars.forEach((star, index) => {
+		        if (index < rating) {
+		            // Stella piena (gialla)
+		            star.classList.remove('text-gray-600');
+		            star.classList.add('text-yellow-400');
+		            star.innerHTML = '&#9733;'; // Stella piena
+		        } else {
+		            // Stella vuota (grigia)
+		            star.classList.remove('text-yellow-400');
+		            star.classList.add('text-gray-600');
+		            star.innerHTML = '&#9734;'; // Stella vuota
+		        }
+		    });
+		}
+		window.setRating = setRating;
         // --- GESTIONE DATI UTENTE E FIRESTORE ---
 
         function getLogDocumentRef(dayId) {
@@ -894,7 +923,7 @@
 		        console.error("Errore durante il parsing o il rendering del grafico:", e);
 		    }
 		}
-		async function logWorkoutHistory(dayName) {
+		async function logWorkoutHistory(dayName, rating) {
 		    const historyColRef = getHistoryCollectionRef();
 		    if (!historyColRef) return;
 		
@@ -908,12 +937,14 @@
 		        durationDisplay: `${Math.floor(window.totalTimeSeconds / 3600).toString().padStart(2, '0')}:${Math.floor((window.totalTimeSeconds % 3600) / 60).toString().padStart(2, '0')}:${(window.totalTimeSeconds % 60).toString().padStart(2, '0')}`,
 		        dayName: dayName,
 		        totalTonnage: Math.round(window.totalTonnage),
-		        estimatedCalories: Math.round(window.totalCalories || 0)
+		        estimatedCalories: Math.round(window.totalCalories || 0),
+				rating: rating || 0 
 		    };
 		
 		    try {
 		        // Usiamo addDoc per creare un nuovo documento con ID automatico
-		        await setDoc(doc(historyColRef), workoutLog); 
+		        // await setDoc(doc(historyColRef), workoutLog); 
+				await addDoc(historyColRef, workoutLog);
 		        showTemporaryMessage('Allenamento salvato nello storico!', 'bg-green-600');
 		    } catch (error) {
 		        console.error("Errore nel log dello storico:", error);
@@ -944,17 +975,49 @@
 			const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 50;
 			window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight);
 			// *** NUOVA CHIAMATA PER LOGGARE L'ALLENAMENTO ***
-			logWorkoutHistory(dayData.name); 
+			//logWorkoutHistory(dayData.name); 
 			// ***********************************************
 			showTemporaryMessage(`Allenamento terminato in ${document.getElementById('total-timer').textContent.split(': ').pop()}!`, 'bg-purple-600');
             document.getElementById('workout-content').innerHTML = `<div class="p-8 text-center bg-gray-700 rounded-xl shadow-2xl"><h2 class="text-4xl font-extrabold text-green-400 mb-4">🏆 ALLENAMENTO COMPLETATO! 🥳</h2>
 			<p class="text-xl text-gray-300">Complimenti! Hai completato tutti gli esercizi per ${dayData.name}.</p>
 			<p class="text-2xl font-extrabold text-yellow-400 mt-4">Volume Totale: ${Math.round(window.totalTonnage).toLocaleString('it-IT')} kg</p>
 			<p class="text-2xl font-extrabold text-red-400 mt-2">🔥 Calorie Stimate: ${window.totalCalories.toLocaleString('it-IT')} kcal</p>
-			<p id="final-time-display" class="text-2xl font-extrabold text-white mt-4">${document.getElementById('total-timer').textContent}</p><button onclick="window.stopGuidedMode()" class="mt-6 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 transition duration-150 shadow-lg">Torna alla Visualizzazione Completa</button></div>`;
+			// ...
+			<p id="final-time-display" class="text-2xl font-extrabold text-white mt-4">${document.getElementById('total-timer').textContent}</p>` +
+			
+			`<!-- NUOVO: Selettore Stelle -->` +
+			`<div class="mt-6">` +
+			    `<p class="text-lg text-gray-300 mb-2">Come valuti questo allenamento?</p>` +
+			    `<div class="flex justify-center items-center space-x-2 text-4xl cursor-pointer">` +
+			        `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(1)">&#9734;</span>` +
+			        `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(2)">&#9734;</span>` +
+			        `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(3)">&#9734;</span>` +
+			        `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(4)">&#9734;</span>` +
+			        `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(5)">&#9734;</span>` +
+			    `</div>` +
+			`</div>` +
+			
+			`<!-- MODIFICATO: Bottone Salva e Torna -->` +
+			`<button onclick="window.saveAndExitGuidedMode('${dayData.name}')" class="mt-8 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 transition duration-150 shadow-lg">Salva e Torna</button>` +
+			`</div>`;
             window.isGuidedMode = false; window.currentExIndex = 0; window.currentSet = 1; isRestPeriodActive = false; document.getElementById('guided-controls-container').classList.add('hidden');
         }
         window.nextStep = nextStep;
+		/**
+		 * Salva lo storico (con la valutazione) e esce dalla modalità guidata.
+		 */
+		async function saveAndExitGuidedMode(dayName) {
+		    // 1. Salva i dati, passando la valutazione
+		    await logWorkoutHistory(dayName, window.currentWorkoutRating);
+		    
+		    // 2. Resetta la valutazione per il prossimo allenamento
+		    window.currentWorkoutRating = 0;
+		    
+		    // 3. Chiudi la modalità guidata
+		    window.stopGuidedMode();
+		}
+		window.saveAndExitGuidedMode = saveAndExitGuidedMode;
+		
         function renderGuidedMode() { /* ... codice invariato ... */
             const dayData = window.workoutDays[window.activeDay]; const contentDiv = document.getElementById('workout-content');
             if (window.currentExIndex >= dayData.exercises.length) { nextStep(); return; }
