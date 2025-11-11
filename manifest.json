@@ -1,0 +1,23 @@
+{
+  "name": "Laura's Gym App",
+  "short_name": "Gym App",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "description": "Piano di allenamento personale di Laura Corridoni",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192/0d1117/ffffff?text=💪",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://placehold.co/512x512/0d1117/ffffff?text=💪",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}
