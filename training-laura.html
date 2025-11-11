@@ -232,13 +232,14 @@
 		
 		        // historyContentDiv.innerHTML = html;
 				// Ultima riga del blocco try:
-                historyContentDiv.innerHTML = listHtml; // Combina grafico e lista
+                historyContentDiv.innerHTML = listHtml; 
                 
                 // *** NUOVA CHIAMATA: Avvia il rendering del grafico ***
+				/*  commentato in attesa di modifiche
                 if (chartData.filter(d => d.hasWorkout).length > 0) {
                     renderWeeklyChart();
                 }
-		
+				*/
 		    } catch (error) {
 		        console.error("Errore nel caricamento dello storico:", error);
 		        historyContentDiv.innerHTML = `<p class="text-center text-red-500 p-8">Impossibile caricare lo storico: ${error.message}.</p>`;
