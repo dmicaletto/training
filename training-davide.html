@@ -42,7 +42,7 @@
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 		import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, query, orderBy, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; 
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -120,6 +120,20 @@
                     { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/crunch.jpg?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
                 ]
             },
+			'day_4': {
+                name: "Giorno 4: ssss e Spalle",
+                exercises: [
+                    { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO', notes: "Mantieni un ritmo moderato che ti consenta di parlare." },
+                    { name: "Leg Press", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: './images/leg-press.png?text=LEG+PRESS', notes: "Non bloccare le ginocchia in alto. Spingi con i talloni." },
+                    { name: "Leg Extension", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: './images/legext.png?text=LEG+EXT', notes: "Contrai il quadricipite per un secondo al massimo accorciamento." },
+                    { name: "Leg Curl Sdraiato", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: './images/leg-curl-sdraiato-bg.png?text=LEG+CURL', notes: "Focus sui femorali. Movimento lento in fase negativa." },
+                    { name: "Adduzioni", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 15, imageUrl: './images/adductor.png?text=ADDUCTOR', notes: "Siediti in modo da isolare solo gli adduttori. Controlla il ritorno." },
+                    { name: "Alzate Laterali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: './images/alzate-laterali.png?text=ALZATE+LATERALI', notes: "Gomiti leggermente flessi. Porta i manubri all'altezza delle spalle, non più su." },
+                    { name: "Alzate Frontali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: './images/alzate-frontali.png?text=ALZATE+FRONTALI', notes: "Solleva alternando le braccia o entrambe insieme. Movimento controllato." },
+                    { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/lombari.jpg?text=LOMBARI', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
+                    { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/crunch.jpg?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
+                ]
+            },
         };
 		// NUOVE FUNZIONI: Controllo Menu Laterale (Off-Canvas)
 		function openMenu() {
@@ -140,8 +154,6 @@
 		}
 		window.closeMenu = closeMenu;
 		
-		// ... (Le funzioni openProfileModal, closeProfileModal, openHistoryModal, closeHistoryModal restano come sono, ma verranno chiamate dal menu)
-		// --- Riscriviamo openHistoryModal e openProfileModal per chiudere il menu ---
 		function openProfileModal() {
 		    closeMenu(); // Chiude il menu laterale
 		    const modal = document.getElementById('profile-modal');
@@ -595,6 +607,9 @@
                 window.firebaseApp = initializeApp(firebaseConfig);
                 window.db = getFirestore(window.firebaseApp);
                 window.auth = getAuth(window.firebaseApp);
+				// Imposta la persistenza a "local" (localStorage).
+				// Questo manterrà l'utente anonimo loggato anche dopo la chiusura del browser.
+				await setPersistence(window.auth, browserLocalPersistence);
                 window.appId = appId; // Store appId globally
 
                 // Autenticazione
@@ -1310,3 +1325,4 @@
 </html>
 </body>
 </html>
+
