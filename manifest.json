@@ -1,11 +1,11 @@
 {
   "name": "Davide's Gym App",
   "short_name": "My Gym App",
-  "start_url": "./training-davide.html",
+  "start_url": "./training-laura.html",
   "display": "standalone",
   "background_color": "#0d1117",
   "theme_color": "#0d1117",
-  "description": "Piano di allenamento personale di Davide Micaletto",
+  "description": "Piano di allenamento personale di Laura Corridoni",
   "icons": [
     {
       "src": "./images/laura-icon.png",
