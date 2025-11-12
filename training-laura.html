@@ -849,11 +849,12 @@
                  if (button) {
                      button.classList.remove('bg-yellow-600', 'hover:bg-yellow-700', 'bg-green-600', 'hover:bg-green-700', 'bg-red-600');
                      if (timerState && timerState.isRunning) {
-                         button.classList.add('hidden'); // `RIPOSO IN CORSO`; button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                         button.textContent = `RIPOSO IN CORSO`; 
+						 button.classList.add('bg-blue-600', 'hover:bg-blue-700');
                          if (terminateButton) terminateButton.classList.remove('hidden');
                      } else {
-                         button.textContent = 'Avvia Riposo'; button.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
-						 button.classList.remove('hidden');
+                         button.textContent = 'Avvia Riposo'; 
+						 button.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
                          if (terminateButton) terminateButton.classList.add('hidden');
                      }
                  }
