@@ -1,7 +1,7 @@
 const CACHE_NAME = 'gym-app-laura-v1';
 // Lista delle risorse principali da salvare subito
 const URLS_TO_CACHE = [
-  './training-davide.html', // Questo si riferisce a index.html
+  './training-laura.html', // Questo si riferisce a index.html
   'manifest.json',
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js',
