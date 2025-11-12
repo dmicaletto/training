@@ -960,12 +960,64 @@
             showTemporaryMessage('Modalità Guidata avviata. Inizia il tuo allenamento!', 'bg-blue-600');
         }
         window.startGuidedMode = startGuidedMode;
-        function stopGuidedMode() { /* ... codice invariato ... */
-            stopTotalTimer(); window.isGuidedMode = false; window.currentExIndex = 0; window.currentSet = 1; window.totalTonnage = 0; window.exerciseTonnageMap = {}; isRestPeriodActive = false;
-            for (const timerId in activeTimers) { if (activeTimers[timerId] && activeTimers[timerId].interval) { clearInterval(activeTimers[timerId].interval); } } activeTimers = {};
-            document.getElementById('day-tabs').classList.remove('hidden'); document.getElementById('mode-toggle-button').classList.remove('hidden');
-            document.getElementById('guided-controls-container').classList.add('hidden'); renderDay(window.activeDay);
-        }
+		/**
+		 * MODIFICATA: Interrompe l'allenamento, salva i dati parziali, e poi esce.
+		 */
+		async function stopGuidedMode() {
+		    // 1. Ferma il timer e ottieni il tempo finale
+		    stopTotalTimer(); 
+		
+		    // 2. Ottieni i dati necessari per il salvataggio
+		    const dayData = window.workoutDays[window.activeDay];
+		    const dayName = dayData ? dayData.name : "Allenamento Interrotto";
+		
+		    // 3. Calcola le calorie parziali in base al tonnellaggio attuale
+		    // Usiamo un peso di fallback se il profilo non è completo
+		    const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 70; 
+		    window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight);
+		
+		    // 4. Salva i dati nello storico (solo se è stato fatto qualcosa)
+		    // (Salviamo se l'utente ha sollevato almeno 1kg o si è allenato per più di 10 secondi)
+		    if (window.totalTonnage > 0 || window.totalTimeSeconds > 10) {
+		        try {
+		            // Salviamo nello storico (passiamo '0' come rating perché è un'interruzione)
+		            await logWorkoutHistory(dayName, 0); 
+		            showTemporaryMessage('Allenamento interrotto e salvato nello storico.', 'bg-yellow-600');
+		        } catch (error) {
+		            console.error("Errore nel salvataggio dell'allenamento interrotto:", error);
+		            showTemporaryMessage('Errore nel salvataggio parziale.', 'bg-red-500');
+		        }
+		    } else {
+		        showTemporaryMessage('Allenamento interrotto. Nessun dato da salvare.', 'bg-gray-600');
+		    }
+		
+		    // 5. Azzera tutte le variabili globali (logica originale)
+		    window.isGuidedMode = false; 
+		    window.currentExIndex = 0; 
+		    window.currentSet = 1; 
+		    window.totalTonnage = 0; 
+		    window.exerciseTonnageMap = {}; 
+		    isRestPeriodActive = false;
+		    window.totalCalories = 0; // Azzeriamo DOPO aver salvato
+		    window.currentWorkoutRating = 0;
+		
+		    // 6. Ferma tutti i timer attivi (logica originale)
+		    for (const timerId in activeTimers) { 
+		        if (activeTimers[timerId] && activeTimers[timerId].interval) { 
+		            clearInterval(activeTimers[timerId].interval); 
+		        } 
+		    } 
+		    activeTimers = {};
+		
+		    // 7. Ripristina l'interfaccia (logica originale)
+		    document.getElementById('day-tabs').classList.remove('hidden'); 
+		    document.getElementById('mode-toggle-button').classList.remove('hidden');
+		    document.getElementById('guided-controls-container').classList.add('hidden'); 
+		
+		    // 8. Renderizza la visualizzazione standard
+		    renderDay(window.activeDay);
+		}
+		window.stopGuidedMode = stopGuidedMode;
 		/**
 		 * Disegna il grafico settimanale utilizzando Chart.js
 		 */
@@ -1375,6 +1427,7 @@
 </html>
 </body>
 </html>
+
 
 
 
