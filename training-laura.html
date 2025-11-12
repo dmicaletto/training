@@ -849,10 +849,11 @@
                  if (button) {
                      button.classList.remove('bg-yellow-600', 'hover:bg-yellow-700', 'bg-green-600', 'hover:bg-green-700', 'bg-red-600');
                      if (timerState && timerState.isRunning) {
-                         button.textContent = `RIPOSO IN CORSO`; button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                         button.classList.add('hidden'); // `RIPOSO IN CORSO`; button.classList.add('bg-blue-600', 'hover:bg-blue-700');
                          if (terminateButton) terminateButton.classList.remove('hidden');
                      } else {
                          button.textContent = 'Avvia Riposo'; button.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+						 button.classList.remove('hidden');
                          if (terminateButton) terminateButton.classList.add('hidden');
                      }
                  }
@@ -1337,14 +1338,11 @@
             <h1 id="main-title" class="text-4xl font-extrabold text-blue-500 tracking-tight">
                 💪 Piano di allenamento Laura Corridoni
             </h1>
-            <p class="text-gray-400 mt-2">Programma di 3 giorni con tracciamento pesi in tempo reale.</p>
         </header>
         <div class="mb-6 p-3 bg-gray-900 rounded-xl border border-gray-700 text-center">
             <p id="status-message" class="text-sm font-medium text-green-400">Inizializzazione in corso...</p>
             <p id="user-id" class="text-xs text-gray-500 mt-1 hidden"></p>
         </div>
-        
-        
         <div id="day-tabs" class="flex justify-around bg-gray-900 rounded-t-xl overflow-hidden border-b-2 border-gray-700 mb-4">
             </div>
 
