@@ -1089,11 +1089,40 @@
             const dayData = window.workoutDays[window.activeDay]; const currentExercise = dayData.exercises[window.currentExIndex]; const setKey = `set_${window.currentSet}`;
             const isTimedExercise = currentExercise.sets === 0 || currentExercise.rest === "N/A" || !currentExercise.sets;
             if (!isTimedExercise) {
-                const weight = (currentExercise.logged_weights && currentExercise.logged_weights[setKey] !== undefined && currentExercise.logged_weights[setKey] !== null) ? parseFloat(currentExercise.logged_weights[setKey]) : null;
-                if (weight !== null && weight > 0) {
-                    const tonnage = calculateTonnageForSet(currentExercise.reps, weight); window.totalTonnage += tonnage; window.exerciseTonnageMap[window.currentExIndex] = (window.exerciseTonnageMap[window.currentExIndex] || 0) + tonnage; updateTonnageDisplay();
-                } else { showTemporaryMessage('Attenzione: Peso non loggato. Tonnellaggio non calcolato.', 'bg-red-500'); }
-            }
+             	// --- INIZIO CORREZIONE TONNELLAGGIO ---
+				let weightToCalculate = null;
+				let weightNeedsSaving = false; // Flag per salvare il default
+				
+				// 1. Controlla se esiste un peso loggato (salvato da 'onchange')
+				if (currentExercise.logged_weights && currentExercise.logged_weights[setKey] !== undefined && currentExercise.logged_weights[setKey] !== null) {
+				    weightToCalculate = parseFloat(currentExercise.logged_weights[setKey]);
+				} 
+				// 2. Altrimenti, se l'utente non ha toccato l'input, usa il defaultWeight
+				else if (currentExercise.defaultWeight && currentExercise.defaultWeight > 0) {
+				    weightToCalculate = parseFloat(currentExercise.defaultWeight);
+				    // Dobbiamo salvare questo default per coerenza
+				    weightNeedsSaving = true; 
+				}
+				
+				// Calcola il tonnellaggio solo se abbiamo un peso valido
+				if (weightToCalculate !== null && weightToCalculate > 0) {
+				    const tonnage = calculateTonnageForSet(currentExercise.reps, weightToCalculate); 
+				    window.totalTonnage += tonnage; 
+				    window.exerciseTonnageMap[window.currentExIndex] = (window.exerciseTonnageMap[window.currentExIndex] || 0) + tonnage; 
+				    updateTonnageDisplay();
+				
+				    // Se stiamo usando il peso di default, salviamolo ora in background
+				    if (weightNeedsSaving && window.isPersistenceEnabled) {
+				        // Chiamiamo saveWeight in background (non c'è bisogno di 'await')
+				        // (dayId, exIndex, setIndex, weight)
+				        window.saveWeight(window.activeDay, window.currentExIndex, window.currentSet - 1, weightToCalculate);
+				    }
+				} else { 
+				    // Non mostrare un errore, l'utente potrebbe aver saltato la serie (peso 0 o nullo)
+				    console.log(`Set ${window.currentSet} saltato (nessun peso) per ${currentExercise.name}. Tonnellaggio non aggiunto.`);
+				}
+				// --- FINE CORREZIONE TONNELLAGGIO ---   
+			}
             const timerId = `timer-display-${window.activeDay}-${window.currentExIndex}`; if (activeTimers[timerId] && activeTimers[timerId].interval) { clearInterval(activeTimers[timerId].interval); } activeTimers[timerId] = null;
             if (!isTimedExercise && window.currentSet < currentExercise.sets) {
                 window.currentSet++; showTemporaryMessage(`Prossima serie: ${window.currentSet} di ${currentExercise.sets}. Inizia la tua serie.`, 'bg-blue-600'); renderGuidedMode(); return;
