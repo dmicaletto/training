@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Piano di allenamento per Davide Micaletto</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	
+	<!-- META TAG PWA E TEMA -->
+	<meta name="theme-color" content="#0d1117">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="apple-mobile-web-app-title" content="Gym App">
+	
+	<!-- LINK AL MANIFEST (che ho creato io) -->
+	<link rel="manifest" href="manifest.json">
+	
+	<!-- ICONA PER iOS (Apple) -->
+	<link rel="apple-touch-icon" href="https://placehold.co/192x192/0d1117/ffffff?text=💪">
+	
+	<!-- ... il resto del <head> continua ... -->
+    *(Nota: Assicurati solo di incollare le 6 righe di commenti e tag qui sopra, fai attenzione a non duplicare la riga di `chart.js` o `tailwindcss` se le vedi nel mio snippet).*
     <script src="https://cdn.tailwindcss.com"></script>
 	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <style>
@@ -1203,7 +1219,17 @@
                 isFirst = false;
             }
             tabsContainer.innerHTML = tabsHtml;
-
+			// --- NUOVA AGGIUNTA: REGISTRAZIONE SERVICE WORKER ---
+			if ('serviceWorker' in navigator) {
+				navigator.serviceWorker.register('sw.js')
+					.then(registration => {
+						console.log('Service Worker registrato con successo:', registration);
+					})
+					.catch(error => {
+						console.error('Registrazione Service Worker fallita:', error);
+					});
+			}
+			// --- FINE AGGIUNTA ---
             initializeFirebase();
         });
     </script>
@@ -1322,6 +1348,7 @@
 </html>
 </body>
 </html>
+
 
 
 
