@@ -961,47 +961,71 @@
         }
         window.startGuidedMode = startGuidedMode;
 		/**
-		 * MODIFICATA: Interrompe l'allenamento, salva i dati parziali, e poi esce.
+		 * MODIFICATA: Interrompe l'allenamento e mostra la schermata di riepilogo/valutazione.
 		 */
-		async function stopGuidedMode() {
-		    // 1. Ferma il timer e ottieni il tempo finale
+		function stopGuidedMode() {
+		    // 1. Ferma il timer
 		    stopTotalTimer(); 
 		
-		    // 2. Ottieni i dati necessari per il salvataggio
+		    // 2. Ottieni i dati
 		    const dayData = window.workoutDays[window.activeDay];
-		    const dayName = dayData ? dayData.name : "Allenamento Interrotto";
+		    const dayName = dayData ? dayData.name : "Allenamento";
 		
-		    // 3. Calcola le calorie parziali in base al tonnellaggio attuale
-		    // Usiamo un peso di fallback se il profilo non è completo
-		    const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 70; 
+		    // 3. Calcola le calorie parziali
+		    const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 70;
 		    window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight);
 		
-		    // 4. Salva i dati nello storico (solo se è stato fatto qualcosa)
-		    // (Salviamo se l'utente ha sollevato almeno 1kg o si è allenato per più di 10 secondi)
-		    if (window.totalTonnage > 0 || window.totalTimeSeconds > 10) {
-		        try {
-		            // Salviamo nello storico (passiamo '0' come rating perché è un'interruzione)
-		            await logWorkoutHistory(dayName, 0); 
-		            showTemporaryMessage('Allenamento interrotto e salvato nello storico.', 'bg-yellow-600');
-		        } catch (error) {
-		            console.error("Errore nel salvataggio dell'allenamento interrotto:", error);
-		            showTemporaryMessage('Errore nel salvataggio parziale.', 'bg-red-500');
-		        }
-		    } else {
-		        showTemporaryMessage('Allenamento interrotto. Nessun dato da salvare.', 'bg-gray-600');
-		    }
+		    // 4. Mostra la schermata di riepilogo e valutazione
+		    // (Questo codice è copiato da nextStep, ma con titolo diverso)
+		    showTemporaryMessage(`Allenamento Interrotto in ${document.getElementById('total-timer').textContent.split(': ').pop()}`, 'bg-yellow-600');
 		
-		    // 5. Azzera tutte le variabili globali (logica originale)
+		    document.getElementById('workout-content').innerHTML = 
+		        `<div class="p-8 text-center bg-gray-700 rounded-xl shadow-2xl">` +
+		            `<h2 class="text-4xl font-extrabold text-yellow-400 mb-4">✋ ALLENAMENTO INTERROTTO</h2>` +
+		            `<p class="text-xl text-gray-300">Hai terminato in anticipo. Salva i tuoi progressi parziali.</p>` +
+		            `<p class="text-2xl font-extrabold text-green-400 mt-4">Volume Totale: ${Math.round(window.totalTonnage).toLocaleString('it-IT')} kg</p>` +
+		            `<p class="text-2xl font-extrabold text-red-400 mt-2">🔥 Calorie Stimate: ${window.totalCalories.toLocaleString('it-IT')} kcal</p>` +
+		            `<p id="final-time-display" class="text-2xl font-extrabold text-white mt-4">${document.getElementById('total-timer').textContent}</p>` +
+		
+		            `<!-- Selettore Stelle -->` +
+		            `<div class="mt-6">` +
+		                `<p class="text-lg text-gray-300 mb-2">Come valuti questo allenamento?</p>` +
+		                `<div class="flex justify-center items-center space-x-2 text-4xl cursor-pointer">` +
+		                    `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(1)">&#9734;</span>` +
+		                    `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(2)">&#9734;</span>` +
+		                    `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(3)">&#9734;</span>` +
+		                    `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(4)">&#9734;</span>` +
+		                    `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(5)">&#9734;</span>` +
+		                `</div>` +
+		            `</div>` +
+		
+		            `<!-- Bottone Salva e Torna (chiama la funzione che ora funziona) -->` +
+		            `<button onclick="window.saveAndExitGuidedMode('${dayName}')" class="mt-8 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 transition duration-150 shadow-lg">Salva e Torna</button>` +
+		        `</div>`;
+		
+		    // 5. Pulisci la UI (ma non le variabili)
+		    window.isGuidedMode = false;
+		    isRestPeriodActive = false;
+		    document.getElementById('guided-controls-container').classList.add('hidden');
+		}
+		window.stopGuidedMode = stopGuidedMode;
+
+		/**
+		 * NUOVA FUNZIONE INTERNA:
+		 * Pulisce e resetta la UI alla fine della modalità guidata.
+		 */
+		function __internal_cleanup_guided_mode() {
+		    // 5. Azzera tutte le variabili globali
 		    window.isGuidedMode = false; 
 		    window.currentExIndex = 0; 
 		    window.currentSet = 1; 
 		    window.totalTonnage = 0; 
 		    window.exerciseTonnageMap = {}; 
 		    isRestPeriodActive = false;
-		    window.totalCalories = 0; // Azzeriamo DOPO aver salvato
-		    window.currentWorkoutRating = 0;
+		    window.totalCalories = 0;
+		    window.currentWorkoutRating = 0; // Resetta la valutazione
 		
-		    // 6. Ferma tutti i timer attivi (logica originale)
+		    // 6. Ferma tutti i timer attivi
 		    for (const timerId in activeTimers) { 
 		        if (activeTimers[timerId] && activeTimers[timerId].interval) { 
 		            clearInterval(activeTimers[timerId].interval); 
@@ -1009,7 +1033,7 @@
 		    } 
 		    activeTimers = {};
 		
-		    // 7. Ripristina l'interfaccia (logica originale)
+		    // 7. Ripristina l'interfaccia
 		    document.getElementById('day-tabs').classList.remove('hidden'); 
 		    document.getElementById('mode-toggle-button').classList.remove('hidden');
 		    document.getElementById('guided-controls-container').classList.add('hidden'); 
@@ -1017,7 +1041,8 @@
 		    // 8. Renderizza la visualizzazione standard
 		    renderDay(window.activeDay);
 		}
-		window.stopGuidedMode = stopGuidedMode;
+		window.__internal_cleanup_guided_mode = __internal_cleanup_guided_mode;
+		
 		/**
 		 * Disegna il grafico settimanale utilizzando Chart.js
 		 */
@@ -1238,7 +1263,7 @@
 		    window.currentWorkoutRating = 0;
 		    
 		    // 3. Chiudi la modalità guidata
-		    window.stopGuidedMode();
+		    window.__internal_cleanup_guided_mode();
 		}
 		window.saveAndExitGuidedMode = saveAndExitGuidedMode;
 		
@@ -1427,6 +1452,7 @@
 </html>
 </body>
 </html>
+
 
 
 
