@@ -579,10 +579,7 @@
                 titleElement.textContent = `💪 Piano di allenamento`;
             }
         }
-
-
-        // --- FIREBASE INITIALIZATION AND AUTHENTICATION ---
-        
+        // --- FIREBASE INITIALIZATION AND AUTHENTICATION --- 
         // ** CONFIGURAZIONE REINTRODOTTA **
         const MANUAL_FIREBASE_CONFIG = {
             apiKey: "AIzaSyCfTXY1foD8Dr9UxRNzLeOu680aNtIw4TA",
@@ -686,16 +683,6 @@
                 renderDay(window.activeDay);
             }
         }
-
-        // --- GESTIONE DATI FIRESTORE (Omesso per brevità, codice invariato) ---
-        // (codice di startDataListener, saveWeight, saveNote, ecc. qui)
-        
-        // --- FUNZIONI DI UTILITY & RENDERING (Omesso per brevità, codice invariato) ---
-        // (codice di nextStep, renderGuidedMode, renderDay, ecc. qui)
-        
-        // ... (resto delle funzioni)
-
-        // --- RESTO DELLE FUNZIONI (necessarie per completezza ma omesse per brevità) ---
         function startDataListener(dayId) { /* ... codice invariato ... */ 
             if (!window.db || !window.userId || !window.isPersistenceEnabled) return;
             if (window.unsubscribeListener) { window.unsubscribeListener(); }
@@ -1186,7 +1173,7 @@
 		    }
 		}
         window.stopGuidedMode = stopGuidedMode;
-        function nextStep() { /* ... codice invariato ... */
+        function nextStep() { 
             const dayData = window.workoutDays[window.activeDay]; const currentExercise = dayData.exercises[window.currentExIndex]; const setKey = `set_${window.currentSet}`;
             const isTimedExercise = currentExercise.sets === 0 || currentExercise.rest === "N/A" || !currentExercise.sets;
             if (!isTimedExercise) {
@@ -1341,11 +1328,10 @@
 								Nota: ${exercise.notes}
 							</p>
 							` : ''}
-											</div>
-										</div>
 									</div>
 								</div>
-							</div>`; // <-- Aggiunto /div di chiusura per horizontal-snap-child
+							</div>
+						</div>`; // <-- Aggiunto /div di chiusura per horizontal-snap-child
 			});
 			// Costruisce l'HTML finale avvolgendo le card nel contenitore snap
 			let finalHtml = titleHtml + 
