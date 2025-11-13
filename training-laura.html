@@ -1282,23 +1282,42 @@
             });
         }
         window.switchDay = switchDay;
-		function renderDay(dayId) { /* ... codice invariato ... */
+
+		function renderDay(dayId) {
 			const dayData = window.workoutDays[dayId]; const contentDiv = document.getElementById('workout-content');
 			document.getElementById('mode-toggle-button').classList.remove('hidden'); document.getElementById('guided-controls-container').classList.add('hidden'); document.getElementById('day-tabs').classList.remove('hidden'); document.getElementById('total-timer').classList.add('hidden');
 			if (!dayData) { contentDiv.innerHTML = '<p class="text-red-500">Giorno di allenamento non trovato.</p>'; return; }
 			let html = `<h2 class="text-3xl font-bold mb-6 text-blue-400">${dayData.name}</h2>`;
 			dayData.exercises.forEach((exercise, exIndex) => {
-				const restSeconds = getRestTimeSeconds(exercise.rest); const timerId = `timer-display-${dayId}-${exIndex}`; const isTimedExercise = exercise.sets === 0 || exercise.rest === "N/A" || !exercise.sets;
-				html += `<div class="bg-gray-800 p-4 mb-6 rounded-xl shadow-lg border border-gray-700 transform transition-transform duration-300 hover:scale-[1.005]"><div class="flex flex-col md:flex-row gap-4"><div class="flex-shrink-0 w-full md:w-1/3"><img src="${getImageUrl(exercise)}" alt="Immagine di ${exercise.name}" onerror="this.onerror=null; this.src='https://placehold.co/400x200/800080/ffffff/png?text=LINK+NON+PUBBLICO!+Carica+un+link+diretto';" class="w-full h-auto object-cover rounded-lg border border-gray-600 shadow-md aspect-[4/3]"></div><div class="flex-grow flex flex-col justify-between"><div><h3 class="text-2xl font-bold mb-1 text-white">${exercise.name}</h3><p class="text-sm text-gray-400">Ripetizioni/Durata: <span class="text-blue-300 font-semibold">${exercise.reps}</span></p></div>${!isTimedExercise ? `<div class="mt-4"><p class="text-sm text-gray-400">Recupero Previsto: <span class="text-yellow-300 font-semibold">${exercise.rest}</span></p></div>` : `<p class="text-sm text-gray-400 mt-2 p-3 bg-gray-700 rounded-lg">Modalità: <span class="text-green-400 font-bold">Continuo / Durata (Non a Serie)</span></p>`}</div></div><div class="mt-6 border-t border-gray-700 pt-4"><p class="font-medium mb-2 text-gray-300">Consiglio del Personal Trainer AI:</p><div class="flex flex-col gap-3"><button id="tip-btn-${dayId}-${exIndex}" onclick="generateExerciseTip('${exercise.name}', document.getElementById('tip-output-${dayId}-${exIndex}'))" class="w-full px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition duration-150 shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">✨ Chiedi un Tip sull'Esecuzione</button><div id="tip-output-${dayId}-${exIndex}" class="p-3 bg-gray-900 rounded-lg flex-grow text-gray-400 w-full min-h-[50px] flex items-center"><span class="text-xs">${exercise.notes ? `Nota Predefinita: ${exercise.notes}` : 'Clicca per un consiglio sul corretto svolgimento.'}</span></div></div></div>${!isTimedExercise ? `<div class="mt-6 border-t border-gray-700 pt-4">` : ''}`;
-				if (!isTimedExercise) {
-					const prevSetWeight = (exercise.logged_weights && exercise.logged_weights['set_1'] !== undefined && exercise.logged_weights['set_1'] !== null) ? exercise.logged_weights['set_1'] : exercise.defaultWeight || 'N/A';
-					html += `<p class="text-sm font-semibold mb-3 text-gray-400">Peso Ultima Serie Loggata (Set 1): <span class="text-indigo-400 font-extrabold">${prevSetWeight} kg</span></p><p class="font-bold mb-3 text-lg text-yellow-400">Log Pesi (in kg):</p><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">`;
-					for (let setIndex = 0; setIndex < exercise.sets; setIndex++) {
-						const setKey = `set_${setIndex + 1}`; const currentWeight = (exercise.logged_weights && exercise.logged_weights[setKey] !== undefined && exercise.logged_weights[setKey] !== null) ? exercise.logged_weights[setKey] : exercise.defaultWeight || '';
-						html += `<div class="flex flex-col relative"><label for="${dayId}-${exIndex}-${setIndex}" class="text-xs font-semibold mb-1 text-gray-400">Serie ${setIndex + 1} (${exercise.reps})</label><input type="number" step="0.5" value="${currentWeight}" onchange="window.saveWeight('${dayId}', ${exIndex}, ${setIndex}, this.value)" id="${dayId}-${exIndex}-${setIndex}" class="w-full p-3 text-lg text-white bg-gray-700 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 shadow-inner" placeholder="Peso (kg)"></div>`;
-					}
-				}
-				html += `${!isTimedExercise ? `</div></div>` : ''}<div class="mt-6 border-t border-gray-700 pt-4"><label for="notes-${dayId}-${exIndex}" class="font-bold mb-2 block text-sm text-white">Note Personali:</label><textarea id="notes-${dayId}-${exIndex}" rows="1" placeholder="${exercise.notes || 'Aggiungi note personali su esecuzione, sensazioni, o modifiche... (Es. presa stretta, cedimento alla 8a rip.)'}" onchange="window.saveNote('${dayId}', ${exIndex}, this.value)" class="w-full p-3 text-sm text-white bg-gray-700 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 shadow-inner">${(exercise.logged_notes && exercise.logged_notes.trim()) ? exercise.logged_notes : ''}</textarea></div></div>`;
+				const restSeconds = getRestTimeSeconds(exercise.rest); 
+				const timerId = `timer-display-${dayId}-${exIndex}`; 
+				const isTimedExercise = exercise.sets === 0 || exercise.rest === "N/A" || !exercise.sets;			
+				// --- Costruiamo la card compatta ---
+				html += `<div class="bg-gray-800 p-4 mb-4 rounded-xl shadow-lg border border-gray-700">
+					<div class="flex flex-col sm:flex-row gap-4">
+			
+						<!-- Immagine (dal tuo codice originale) -->
+						<div class="flex-shrink-0 w-full sm:w-1/3">
+							<img src="${getImageUrl(exercise)}" alt="Immagine di ${exercise.name}" onerror="this.onerror=null; this.src='https.placehold.co/400x200/800080/ffffff/png?text=LINK+NON+PUBBLICO!+Carica+un+link+diretto';" class="w-full h-auto object-cover rounded-lg border border-gray-600 shadow-md aspect-[4/3]">
+						</div>
+			
+						<!-- Info Esercizio (dal tuo codice originale) -->
+						<div class="flex-grow flex flex-col justify-center">
+							<div>
+								<h3 class="text-2xl font-bold mb-1 text-white">${exercise.name}</h3>
+								<p class="text-sm text-gray-400">Ripetizioni/Durata: <span class="text-blue-300 font-semibold">${exercise.reps}</span></p>
+							</div>
+							${!isTimedExercise ? `<div class="mt-4"><p class="text-sm text-gray-400">Recupero Previsto: <span class="text-yellow-300 font-semibold">${exercise.rest}</span></p></div>` : `<p class="text-sm text-gray-400 mt-2 p-3 bg-gray-700 rounded-lg">Modalità: <span class="text-green-400 font-bold">Continuo / Durata (Non a Serie)</span></p>`}
+			
+							<!-- Aggiunta della Nota di Default (solo se esiste) -->
+							${exercise.notes ? `
+							<p class="text-xs text-gray-400 italic mt-3 pt-2 border-t border-gray-700">
+								Nota: ${exercise.notes}
+							</p>
+							` : ''}
+						</div>
+					</div>
+				</div>`;
 			});
 			contentDiv.innerHTML = html;
 		}
