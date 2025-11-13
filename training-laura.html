@@ -54,6 +54,30 @@
         .off-canvas.active {
             transform: translateX(0);
         }
+		/* NUOVI STILI PER LO SWIPE ORIZZONTALE */
+		.horizontal-snap-container {
+		    display: flex;
+		    overflow-x: auto;
+		    /* Questa è la magia: abilita lo snap orizzontale */
+		    scroll-snap-type: x mandatory; 
+		    scroll-behavior: smooth;
+		    -webkit-overflow-scrolling: touch; /* Per un feeling nativo su iOS */
+		}
+		
+		.horizontal-snap-child {
+		    flex-shrink: 0; /* Impedisce alle card di restringersi */
+		    width: 100%;
+		    scroll-snap-align: start; /* Aggancia la card all'inizio */
+		}
+		
+		/* Nasconde la scrollbar orizzontale */
+		.no-scrollbar::-webkit-scrollbar {
+		    display: none;
+		}
+		.no-scrollbar {
+		    -ms-overflow-style: none;  /* IE and Edge */
+		    scrollbar-width: none;  /* Firefox */
+		}
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -1287,14 +1311,16 @@
 			const dayData = window.workoutDays[dayId]; const contentDiv = document.getElementById('workout-content');
 			document.getElementById('mode-toggle-button').classList.remove('hidden'); document.getElementById('guided-controls-container').classList.add('hidden'); document.getElementById('day-tabs').classList.remove('hidden'); document.getElementById('total-timer').classList.add('hidden');
 			if (!dayData) { contentDiv.innerHTML = '<p class="text-red-500">Giorno di allenamento non trovato.</p>'; return; }
-			let html = `<h2 class="text-3xl font-bold mb-6 text-blue-400">${dayData.name}</h2>`;
+			let titleHtml = `<h2 class="text-3xl font-bold mb-6 text-blue-400">${dayData.name}</h2>`;
+			let cardsHtml = ''; // Nuova variabile per accumulare solo le card
 			dayData.exercises.forEach((exercise, exIndex) => {
 				const restSeconds = getRestTimeSeconds(exercise.rest); 
 				const timerId = `timer-display-${dayId}-${exIndex}`; 
 				const isTimedExercise = exercise.sets === 0 || exercise.rest === "N/A" || !exercise.sets;			
 				// --- Costruiamo la card compatta ---
-				html += `<div class="bg-gray-800 p-4 mb-4 rounded-xl shadow-lg border border-gray-700">
-					<div class="flex flex-col sm:flex-row gap-4">
+				cardsHtml += `<div class="horizontal-snap-child">
+				                <div class="bg-gray-800 p-4 m-1 rounded-xl shadow-lg border border-gray-700">
+									<div class="flex flex-col sm:flex-row gap-4">
 			
 						<!-- Immagine (dal tuo codice originale) -->
 						<div class="flex-shrink-0 w-full sm:w-1/3">
@@ -1315,11 +1341,19 @@
 								Nota: ${exercise.notes}
 							</p>
 							` : ''}
-						</div>
-					</div>
-				</div>`;
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>`; // <-- Aggiunto /div di chiusura per horizontal-snap-child
 			});
-			contentDiv.innerHTML = html;
+			// Costruisce l'HTML finale avvolgendo le card nel contenitore snap
+			let finalHtml = titleHtml + 
+			                `<div class="horizontal-snap-container no-scrollbar -mx-1">
+			                    ${cardsHtml}
+			                </div>`;
+			
+			contentDiv.innerHTML = finalHtml;
 		}
 
         document.addEventListener('DOMContentLoaded', () => {
