@@ -754,6 +754,10 @@
                             if (window.userId && window.isPersistenceEnabled) {
                                  startDataListener(window.activeDay); 
                             }
+							// Nasconde la barra di stato dopo 1 secondo
+							setTimeout(() => {
+							    document.getElementById('status-container')?.classList.add('hidden');
+							}, 1000);
                         }).catch(err => {
                              // Fallback se loadUserProfile fallisce, forziamo il rendering
                              console.error("Errore fatale nel caricamento utente, forzo il rendering:", err);
@@ -1592,7 +1596,7 @@
                 💪 Piano di allenamento
             </h1>
         </header>
-        <div class="mb-6 p-3 bg-gray-900 rounded-xl border border-gray-700 text-center">
+        <div id="status-container" class="mb-6 p-3 bg-gray-900 rounded-xl border border-gray-700 text-center">
             <p id="status-message" class="text-sm font-medium text-green-400">Inizializzazione in corso...</p>
             <p id="user-id" class="text-xs text-gray-500 mt-1 hidden"></p>
         </div>
@@ -1694,6 +1698,7 @@
 </html>
 </body>
 </html>
+
 
 
 
