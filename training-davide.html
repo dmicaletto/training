@@ -77,6 +77,24 @@
 		    -ms-overflow-style: none;  /* IE and Edge */
 		    scrollbar-width: none;  /* Firefox */
 		}
+		/* NUOVI STILI PER I PALLINI (DOTS) */
+		.swiper-dots {
+		    display: flex;
+		    justify-content: center;
+		    align-items: center;
+		    padding: 10px 0;
+		}
+		.swiper-dot {
+		    width: 8px; /* Pallini piccoli */
+		    height: 8px;
+		    border-radius: 50%;
+		    background-color: #4b5563; /* Grigio (inattivo) */
+		    margin: 0 4px;
+		    transition: background-color 0.3s ease;
+		}
+		.swiper-dot.active {
+		    background-color: #3b82f6; /* Blu (attivo) */
+		}
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -450,6 +468,54 @@
 		    loadAndRenderHistory();
 		}
 		window.setChartTimeRange = setChartTimeRange;
+
+		/**
+		 * NUOVA FUNZIONE: Inizializza l'IntersectionObserver per i pallini dello swiper.
+		 * Viene chiamata da renderDay dopo che l'HTML è stato creato.
+		 */
+		function initSwiperObserver() {
+		    const swiperContainer = document.querySelector('.horizontal-snap-container');
+		    // Seleziona le card
+		    const cards = document.querySelectorAll('.horizontal-snap-child');
+		    // Seleziona i pallini
+		    const dots = document.querySelectorAll('.swiper-dot');
+		
+		    if (!swiperContainer || cards.length === 0 || dots.length === 0) {
+		        return; // Non fa nulla se non ci sono gli elementi
+		    }
+		
+		    // Opzioni per l'observer:
+		    const options = {
+		        root: swiperContainer, // Osserva lo scroll all'interno del contenitore
+		        rootMargin: '0px',
+		        threshold: 0.51 // L'elemento deve essere visibile almeno al 51%
+		    };
+		
+		    const observer = new IntersectionObserver((entries, observer) => {
+		        entries.forEach(entry => {
+		            // Se l'elemento è quello visibile (intersecante)
+		            if (entry.isIntersecting) {
+		                // Prendi l'indice (che aggiungeremo a breve)
+		                const index = parseInt(entry.target.dataset.index, 10);
+		
+		                // Aggiorna i pallini
+		                dots.forEach((dot, dotIndex) => {
+		                    if (dotIndex === index) {
+		                        dot.classList.add('active');
+		                    } else {
+		                        dot.classList.remove('active');
+		                    }
+		                });
+		            }
+		        });
+		    }, options);
+		
+		    // "Attacca" l'observer a ogni card
+		    cards.forEach(card => {
+		        observer.observe(card);
+		    });
+		}
+		window.initSwiperObserver = initSwiperObserver;
 		/**
 		 * Imposta la valutazione (da 1 a 5) e aggiorna l'UI delle stelle.
 		 */
@@ -1328,7 +1394,7 @@
 				const timerId = `timer-display-${dayId}-${exIndex}`; 
 				const isTimedExercise = exercise.sets === 0 || exercise.rest === "N/A" || !exercise.sets;			
 				// --- Costruiamo la card compatta ---
-				cardsHtml += `<div class="horizontal-snap-child">
+				cardsHtml += `<div class="horizontal-snap-child" data-index="${exIndex}">
 				    <div class="bg-gray-800 p-4 m-1 rounded-xl shadow-lg border border-gray-700">
 						<div class="flex flex-col sm:flex-row gap-4">
 			
@@ -1356,13 +1422,26 @@
 							</div>
 						</div>`; // <-- Aggiunto /div di chiusura per horizontal-snap-child
 			});
-			// Costruisce l'HTML finale avvolgendo le card nel contenitore snap
+			// --- NUOVA AGGIUNTA: Genera i pallini ---
+			let dotsHtml = '<div class="swiper-dots">';
+			dayData.exercises.forEach((_, index) => {
+			    // Aggiungi 'active' solo al primo pallino (default)
+			    const isActive = (index === 0) ? 'active' : '';
+			    dotsHtml += `<div class="swiper-dot ${isActive}" data-dot-index="${index}"></div>`;
+			});
+			dotsHtml += '</div>';
+			// --- FINE AGGIUNTA ---
+			// Costruisce l'HTML finale avvolgendo le card e aggiungendo i pallini
 			let finalHtml = titleHtml + 
 			                `<div class="horizontal-snap-container no-scrollbar -mx-1">
 			                    ${cardsHtml}
-			                </div>`;
+			                </div>` +
+			                dotsHtml; // <-- AGGIUNTA DEI PALLINI
 			
 			contentDiv.innerHTML = finalHtml;
+			// --- NUOVA AGGIUNTA: Avvia l'observer ---
+			// Deve essere chiamato DOPO aver scritto l'innerHTML
+			window.initSwiperObserver();
 		}
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1504,6 +1583,7 @@
 </html>
 </body>
 </html>
+
 
 
 
