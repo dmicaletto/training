@@ -612,7 +612,7 @@
                 
                 if (!persistenceAttempted) {
                     await loadUserProfile(); // Carica il profilo di default e renderizza il titolo
-                    (window.activeDay);
+                    renderDay(window.activeDay);
                     return; 
                 }
 
@@ -642,7 +642,7 @@
                         // 1. Carica il Profilo in modo sicuro
                         loadUserProfile().then(() => {
                             // 2. Esegui il rendering INIZIALE con i dati caricati/di default
-                            (window.activeDay);
+                            renderDay(window.activeDay);
                             
                             // 3. Se autenticato E persistenza attiva, avvia l'ascolto in background.
                             if (window.userId && window.isPersistenceEnabled) {
@@ -651,14 +651,14 @@
                         }).catch(err => {
                              // Fallback se loadUserProfile fallisce, forziamo il rendering
                              console.error("Errore fatale nel caricamento utente, forzo il rendering:", err);
-                             (window.activeDay);
+                             renderDay(window.activeDay);
                         });
 
                     } else {
                         document.getElementById('status-message').textContent = 'Non autenticato. Dati locali.';
                         window.userId = null;
                         renderUserProfileTitle();
-                        (window.activeDay); // Aggiunto fallback rendering
+                        renderDay(window.activeDay); // Aggiunto fallback rendering
                     }
                 });
 
@@ -669,7 +669,7 @@
                 
                 // Assicura il rendering in caso di errore critico
                 await loadUserProfile(); 
-                (window.activeDay);
+                renderDay(window.activeDay);
             }
         }
 
@@ -677,7 +677,7 @@
         // (codice di startDataListener, saveWeight, saveNote, ecc. qui)
         
         // --- FUNZIONI DI UTILITY & RENDERING (Omesso per brevità, codice invariato) ---
-        // (codice di nextStep, renderGuidedMode, , ecc. qui)
+        // (codice di nextStep, renderGuidedMode, renderDay, ecc. qui)
         
         // ... (resto delle funzioni)
 
@@ -708,7 +708,7 @@
                 if (window.isGuidedMode) {
                     renderGuidedMode();
                 } else {
-                    (dayId);
+                    renderDay(dayId);
                     calculateTotalTonnageForDay(dayId);
                     updateTonnageDisplay();
                 }
@@ -1039,7 +1039,7 @@
 		    document.getElementById('guided-controls-container').classList.add('hidden'); 
 		
 		    // 8. Renderizza la visualizzazione standard
-		    (window.activeDay);
+		    renderDay(window.activeDay);
 		}
 		window.__internal_cleanup_guided_mode = __internal_cleanup_guided_mode;
 		
@@ -1285,7 +1285,7 @@
             if (window.isGuidedMode) { stopGuidedMode(); }
             if (window.activeDay === newDayId) return; window.activeDay = newDayId;
             calculateTotalTonnageForDay(newDayId); updateTonnageDisplay();
-            (newDayId);
+            renderDay(newDayId);
             if (window.isPersistenceEnabled) { startDataListener(newDayId); }
             document.querySelectorAll('.day-tab').forEach(tab => {
                 if (tab.dataset.day === newDayId) { tab.classList.remove('text-gray-400', 'border-transparent'); tab.classList.add('text-white', 'border-blue-500', 'bg-gray-800'); } else { tab.classList.remove('text-white', 'border-blue-500', 'bg-gray-800'); tab.classList.add('text-gray-400', 'border-transparent'); }
@@ -1453,6 +1453,7 @@
 </html>
 </body>
 </html>
+
 
 
 
