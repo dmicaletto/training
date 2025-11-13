@@ -1292,13 +1292,34 @@
             });
         }
         window.switchDay = switchDay;
-		function renderDay(dayId) { 
-			const dayData = window.workoutDays[dayId]; const contentDiv = document.getElementById('workout-content');
-			document.getElementById('mode-toggle-button').classList.remove('hidden'); document.getElementById('guided-controls-container').classList.add('hidden'); document.getElementById('day-tabs').classList.remove('hidden'); document.getElementById('total-timer').classList.add('hidden');
-			if (!dayData) { contentDiv.innerHTML = '<p class="text-red-500">Giorno di allenamento non trovato.</p>'; return; }
-			let html = `<h2 class="text-3xl font-bold mb-6 text-blue-400">${dayData.name}</h2>`;
-			dayData.exercises.forEach((exercise, exIndex) => {
-		        const isTimedExercise = exercise.sets === 0 || exercise.rest === "N/A" || !exercise.sets;		
+		/**
+		 * MODIFICATA: Renderizza la visualizzazione "riepilogo" compatta,
+		 * rimuovendo input e logica non necessari prima dell'allenamento.
+		 */
+		function renderDay(dayId) {
+		    const dayData = window.workoutDays[dayId]; 
+		    const contentDiv = document.getElementById('workout-content');
+		
+		    // Reimposta l'interfaccia (mostra i tab, nascondi i controlli della guida)
+		    document.getElementById('mode-toggle-button').classList.remove('hidden'); 
+		    document.getElementById('guided-controls-container').classList.add('hidden'); 
+		    document.getElementById('day-tabs').classList.remove('hidden'); 
+		    document.getElementById('total-timer').classList.add('hidden');
+		
+		    if (!dayData) { 
+		        contentDiv.innerHTML = '<p class="text-red-500">Giorno di allenamento non trovato.</p>'; 
+		        return; 
+		    }
+		
+		    // Inizializza l'HTML con il titolo del giorno
+		    let html = `<h2 class="text-3xl font-bold mb-6 text-blue-400">${dayData.name}</h2>`;
+		
+		    // Inizia il loop per ogni esercizio
+		    dayData.exercises.forEach((exercise, exIndex) => {
+		
+		        // --- INIZIO NUOVA VISUALIZZAZIONE COMPATTA ---
+		        const isTimedExercise = exercise.sets === 0 || exercise.rest === "N/A" || !exercise.sets;
+		
 		        html += `
 		        <div class="bg-gray-800 p-4 mb-4 rounded-xl shadow-lg border border-gray-700">
 		            <div class="flex flex-col sm:flex-row gap-4">
@@ -1336,6 +1357,7 @@
 		                        </div>
 		                        ` : ''}
 		                    </div>
+		
 		                    <!-- Mostra solo la nota di default (se esiste) -->
 		                    ${exercise.notes ? `
 		                    <p class="text-xs text-gray-400 italic mt-3 pt-2 border-t border-gray-700">
@@ -1345,8 +1367,12 @@
 		                </div>
 		            </div>
 		        </div>`;
-			});
-			contentDiv.innerHTML = html;
+		        // --- FINE NUOVA VISUALIZZAZIONE COMPATTA ---
+		
+		    }); // <-- Questa è la chiusura del loop che avevamo erroneamente rimosso
+		
+		    // Scrive l'HTML finale nel contenitore
+		    contentDiv.innerHTML = html;
 		}
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1488,6 +1514,7 @@
 </html>
 </body>
 </html>
+
 
 
 
