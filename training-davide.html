@@ -125,7 +125,7 @@
 		window.totalCalories = 0; // NUOVO: Calorie totali stimate
 		window.currentWorkoutRating = 0; // Per la valutazione (da 1 a 5)
 		window.chartTimeRange = 'week'; // Valore di default: 'week' o 'month'
-        
+        window.floatingNotificationTimer = null;
         // DATI DEL PROFILO UTENTE
         window.userProfile = {
             name: 'Davide',
@@ -537,6 +537,22 @@
 		    });
 		}
 		window.setRating = setRating;
+		/**
+		 * NUOVA: Chiude la notifica floating.
+		 */
+		function closeFloatingNotification() {
+		    const container = document.getElementById('floating-notification-container');
+		    if (container) {
+		        // Nasconde la barra facendola scorrere verso l'alto
+		        container.classList.add('-translate-y-full');
+		    }
+		    // Pulisce il timer di chiusura automatica, se esiste
+		    if (window.floatingNotificationTimer) {
+		        clearTimeout(window.floatingNotificationTimer);
+		        window.floatingNotificationTimer = null;
+		    }
+		}
+		window.closeFloatingNotification = closeFloatingNotification;
         // --- GESTIONE DATI UTENTE E FIRESTORE ---
 
         function getLogDocumentRef(dayId) {
@@ -854,19 +870,41 @@
         }
         window.saveNote = saveNote;
         
-        function showTemporaryMessage(message, colorClass) { /* ... codice invariato ... */
-            const statusMessage = document.getElementById('status-message');
-            const originalText = statusMessage.textContent;
-            const originalClass = statusMessage.className;
-            statusMessage.textContent = message;
-            statusMessage.className = `text-sm font-medium text-white p-2 rounded ${colorClass}`;
-            setTimeout(() => {
-                if (statusMessage.textContent === message) {
-                    statusMessage.textContent = originalText;
-                    statusMessage.className = originalClass;
-                }
-            }, 3000);
-        }
+		/**
+		 * MODIFICATA: Mostra un messaggio nella nuova barra di notifica floating.
+		 */
+		function showTemporaryMessage(message, colorClass) {
+		    const container = document.getElementById('floating-notification-container');
+		    const bar = document.getElementById('floating-notification-bar');
+		    const text = document.getElementById('floating-notification-text');
+		
+		    if (!container || !bar || !text) {
+		        console.warn("Elementi notifica floating non trovati.");
+		        return; 
+		    }
+		
+		    // 1. Cancella il timer precedente se una notifica è già attiva
+		    if (window.floatingNotificationTimer) {
+		        clearTimeout(window.floatingNotificationTimer);
+		    }
+		
+		    // 2. Imposta testo e colore
+		    text.textContent = message;
+		
+		    // Rimuovi tutte le vecchie classi di colore
+		    bar.classList.remove('bg-red-500', 'bg-green-600', 'bg-blue-600', 'bg-yellow-600', 'bg-purple-600', 'bg-gray-600');
+		    // Aggiungi la nuova classe di colore
+		    bar.classList.add(colorClass);
+		
+		    // 3. Mostra la barra facendola scorrere verso il basso
+		    container.classList.remove('-translate-y-full');
+		
+		    // 4. Imposta il timer per l'auto-chiusura (5 secondi)
+		    window.floatingNotificationTimer = setTimeout(() => {
+		        closeFloatingNotification();
+		    }, 5000); // 5 secondi, come hai richiesto
+		}
+		// window.showTemporaryMessage = showTemporaryMessage;
 
         async function generateExerciseTip(exerciseName, exerciseElement) { /* ... codice invariato ... */
             const apiKey = "AIzaSyDnrW-1uba9UTTyKJoGctm8eW8F5lSXmtE";
@@ -1532,6 +1570,17 @@
     </script>
 </head>
 <body class="min-h-screen">
+	<!-- NUOVO: Contenitore Notifiche Floating -->
+	<div id="floating-notification-container" class="fixed top-0 left-0 right-0 z-[9999] p-4 pt-6 sm:pt-4 transition-transform duration-300 ease-out transform -translate-y-full">
+	    <!-- Barra della notifica (colore e testo cambieranno via JS) -->
+	    <div id="floating-notification-bar" class="max-w-md mx-auto rounded-lg shadow-lg p-3 flex items-center justify-between">
+	        <!-- Testo del messaggio -->
+	        <span id="floating-notification-text" class="font-medium text-white text-sm sm:text-base"></span>
+	        <!-- Bottone di chiusura -->
+	        <button onclick="window.closeFloatingNotification()" class="ml-4 text-white hover:text-gray-200 text-2xl font-light" style="line-height: 1;">&times;</button>
+	    </div>
+	</div>
+	<!-- Fine Blocco Notifiche -->
     <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
 		<header class="text-center mb-8 border-b border-gray-700 pb-4 relative">
             <button onclick="openMenu()" class="absolute top-2 right-0 p-2 rounded-full hover:bg-gray-700 transition duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 z-30">
@@ -1645,6 +1694,7 @@
 </html>
 </body>
 </html>
+
 
 
 
