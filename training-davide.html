@@ -1383,11 +1383,11 @@
         }
         window.switchDay = switchDay;
 
-		function renderDay(dayId) { /* ... codice invariato ... */
+		function renderDay(dayId) { 
 			const dayData = window.workoutDays[dayId]; const contentDiv = document.getElementById('workout-content');
 			document.getElementById('mode-toggle-button').classList.remove('hidden'); document.getElementById('guided-controls-container').classList.add('hidden'); document.getElementById('day-tabs').classList.remove('hidden'); document.getElementById('total-timer').classList.add('hidden');
 			if (!dayData) { contentDiv.innerHTML = '<p class="text-red-500">Giorno di allenamento non trovato.</p>'; return; }
-			let titleHtml = `<h2 class="text-3xl font-bold mb-6 text-blue-400">${dayData.name}</h2>`;
+			let titleHtml = `<h2 class="text-2xl font-bold mb-6 text-blue-400">${dayData.name}</h2>`;
 			let cardsHtml = ''; // Nuova variabile per accumulare solo le card
 			dayData.exercises.forEach((exercise, exIndex) => {
 				const restSeconds = getRestTimeSeconds(exercise.rest); 
@@ -1430,7 +1430,6 @@
 			    dotsHtml += `<div class="swiper-dot ${isActive}" data-dot-index="${index}"></div>`;
 			});
 			dotsHtml += '</div>';
-			// --- FINE AGGIUNTA ---
 			// Costruisce l'HTML finale avvolgendo le card e aggiungendo i pallini
 			let finalHtml = titleHtml + 
 			                `<div class="horizontal-snap-container no-scrollbar -mx-1">
@@ -1583,6 +1582,7 @@
 </html>
 </body>
 </html>
+
 
 
 
