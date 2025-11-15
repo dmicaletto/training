@@ -30,7 +30,6 @@ input:focus {
 .off-canvas.active {
     transform: translateX(0);
 }
-
 /* NUOVI STILI PER LO SWIPE ORIZZONTALE */
 .horizontal-snap-container {
     display: flex;
@@ -55,7 +54,6 @@ input:focus {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
 }
-
 /* NUOVI STILI PER I PALLINI (DOTS) */
 .swiper-dots {
     display: flex;
