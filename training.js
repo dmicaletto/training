@@ -10,7 +10,6 @@ window.firebaseApp = null;
 window.db = null;
 window.auth = null;
 window.userId = null;
-window.appId = 'default-app-id'; // Aggiunto appId di default
 window.activeDay = 'day_1'; // Giorno attivo di default
 window.isPersistenceEnabled = false; // Flag per tracciare la persistenza
 
@@ -28,7 +27,6 @@ window.exerciseTonnageMap = {};
 window.totalCalories = 0; // NUOVO: Calorie totali stimate
 window.currentWorkoutRating = 0; // Per la valutazione (da 1 a 5)
 window.chartTimeRange = 'week'; // Valore di default: 'week' o 'month'
-window.floatingNotificationTimer = null;
 
 // DATI DEL PROFILO UTENTE
 window.userProfile = {
@@ -45,39 +43,39 @@ window.workoutDays = {
     'day_1': {
         name: "Giorno 1: Petto e Tricipiti",
         exercises: [
-            { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Stepper', notes: "Mantieni un ritmo moderato che ti consenta di parlare." },
-            { name: "Chest Press distensioni delle braccia", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 20, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Chest+Press', notes: "Spingi i gomiti in avanti. Contrai il petto al massimo accorciamento." },
-            { name: "Pectoral Machine Adduzioni delle braccia", sets: 3, reps: "10-12", rest: "90s", defaultWeight: 20, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Pectoral+Machine', notes: "Mantieni le spalle basse e concentratevi solo sulla contrazione del petto." },
-            { name: "French Press (Manubri)", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 6, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=French+Press', notes: "Movimento controllato, senti l'allungamento. Usa un peso moderato." },
-            { name: "Spinte in Basso (Pushdown)", sets: 3, reps: "10-15", rest: "60s", defaultWeight: 10, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Pushdown', notes: "Porta il cavo fino in fondo. Contrai il tricipite alla massima estensione." },
-            { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Iperestensioni', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
-            { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Crunch', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
+            { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO', notes: "Mantieni un ritmo moderato che ti consenta di parlare." },
+            { name: "Chest Press distensioni delle braccia", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 20, imageUrl: './images/chestpress.png?text=CHEST+PRESS', notes: "Spingi i gomiti in avanti. Contrai il petto al massimo accorciamento." },
+            { name: "Pectoral Machine Adduzioni delle braccia", sets: 3, reps: "10-12", rest: "90s", defaultWeight: 20, imageUrl: './images/pectoral.png?text=PECTORAL+FLY', notes: "Mantieni le spalle basse e concentratevi solo sulla contrazione del petto." },
+            { name: "French Press (Manubri)", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 6, imageUrl: './images/french-press.png?text=PECTORAL+FLY?text=FRENCH+PRESS', notes: "Movimento controllato, senti l'allungamento. Usa un peso moderato." },
+            { name: "Spinte in Basso (Pushdown)", sets: 3, reps: "10-15", rest: "60s", defaultWeight: 10, imageUrl: './images/pushdown.png?text=TRICIPITI+PUSH', notes: "Porta il cavo fino in fondo. Contrai il tricipite alla massima estensione." },
+            { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/lombari.jpg?text=LOMBARI', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
+            { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/crunch.jpg?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
         ]
     },
     'day_2': {
         name: "Giorno 2: Schiena e Bicipiti",
         exercises: [
-            { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Stepper', notes: "Mantieni un ritmo moderato che ti consenta di parlare." },
-            { name: "Lat Machine", sets: 4, reps: "8-10", rest: "90s", defaultWeight: 50, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Lat+Machine', notes: "Tira con i gomiti, non con i bicipiti. Schiena dritta." },
-            { name: "Pulley basso con Triangolo", sets: 3, reps: "10-12 (per braccio)", rest: "60s", defaultWeight: 20, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Pulley', notes: "Petto in fuori, schiena inarcata. Porta il triangolo all'ombelico." },
-            { name: "Curl seduto con Manubri", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 25, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Curl+Manubri', notes: "Ruota il polso (supinazione) durante la salita. Non oscillare." },
-            { name: "Curl a Martello ai Cavi", sets: 3, reps: "10-15", rest: "60s", defaultWeight: 10, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Hammer+Curl', notes: "Focus sull'avambraccio. Presa neutra e stretta." },
-            { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Iperestensioni', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
-            { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Crunch', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
+            { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO', notes: "Mantieni un ritmo moderato che ti consenta di parlare." },
+            { name: "Lat Machine", sets: 4, reps: "8-10", rest: "90s", defaultWeight: 50, imageUrl: './images/lat-machine.png?text=LAT+MACHINE', notes: "Tira con i gomiti, non con i bicipiti. Schiena dritta." },
+            { name: "Pulley basso con Triangolo", sets: 3, reps: "10-12 (per braccio)", rest: "60s", defaultWeight: 20, imageUrl: './images/pulley-basso.png?text=REMATORE', notes: "Petto in fuori, schiena inarcata. Porta il triangolo all'ombelico." },
+            { name: "Curl seduto con Manubri", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 25, imageUrl: './images/curl-manubri-seduto-bg.png?text=CURL+BILANCIERE', notes: "Ruota il polso (supinazione) durante la salita. Non oscillare." },
+            { name: "Curl a Martello ai Cavi", sets: 3, reps: "10-15", rest: "60s", defaultWeight: 10, imageUrl: './images/hammer-curl.png?text=CURL+HAMMER', notes: "Focus sull'avambraccio. Presa neutra e stretta." },
+            { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/lombari.jpg?text=LOMBARI', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
+            { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/crunch.jpg?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
         ]
     },
     'day_3': {
         name: "Giorno 3: Gambe e Spalle",
         exercises: [
-            { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Stepper', notes: "Mantieni un ritmo moderato che ti consenta di parlare." },
-            { name: "Leg Press", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Leg+Press', notes: "Non bloccare le ginocchia in alto. Spingi con i talloni." },
-            { name: "Leg Extension", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Leg+Extension', notes: "Contrai il quadricipite per un secondo al massimo accorciamento." },
-            { name: "Leg Curl Sdraiato", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Leg+Curl', notes: "Focus sui femorali. Movimento lento in fase negativa." },
-            { name: "Adduzioni", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 15, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Adductor', notes: "Siediti in modo da isolare solo gli adduttori. Controlla il ritorno." },
-            { name: "Alzate Laterali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Alzate+Laterali', notes: "Gomiti leggermente flessi. Porta i manubri all'altezza delle spalle, non più su." },
-            { name: "Alzate Frontali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Alzate+Frontali', notes: "Solleva alternando le braccia o entrambe insieme. Movimento controllato." },
-            { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Iperestensioni', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
-            { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: 'https://placehold.co/400x300/334155/ffffff?text=Crunch', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
+            { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO', notes: "Mantieni un ritmo moderato che ti consenta di parlare." },
+            { name: "Leg Press", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: './images/leg-press.png?text=LEG+PRESS', notes: "Non bloccare le ginocchia in alto. Spingi con i talloni." },
+            { name: "Leg Extension", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: './images/legext.png?text=LEG+EXT', notes: "Contrai il quadricipite per un secondo al massimo accorciamento." },
+            { name: "Leg Curl Sdraiato", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: './images/leg-curl-sdraiato-bg.png?text=LEG+CURL', notes: "Focus sui femorali. Movimento lento in fase negativa." },
+            { name: "Adduzioni", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 15, imageUrl: './images/adductor.png?text=ADDUCTOR', notes: "Siediti in modo da isolare solo gli adduttori. Controlla il ritorno." },
+            { name: "Alzate Laterali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: './images/alzate-laterali.png?text=ALZATE+LATERALI', notes: "Gomiti leggermente flessi. Porta i manubri all'altezza delle spalle, non più su." },
+            { name: "Alzate Frontali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: './images/alzate-frontali.png?text=ALZATE+FRONTALI', notes: "Solleva alternando le braccia o entrambe insieme. Movimento controllato." },
+            { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/lombari.jpg?text=LOMBARI', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
+            { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/crunch.jpg?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
         ]
     },
 };
@@ -100,6 +98,7 @@ function closeMenu() {
 }
 window.closeMenu = closeMenu;
 
+// ... (Le funzioni openProfileModal, closeProfileModal, openHistoryModal, closeHistoryModal restano come sono, ma verranno chiamate dal menu)
 // --- Riscriviamo openHistoryModal e openProfileModal per chiudere il menu ---
 function openProfileModal() {
     closeMenu(); // Chiude il menu laterale
@@ -130,7 +129,6 @@ window.closeHistoryModal = closeHistoryModal;
 
 /**
  * Carica lo storico degli allenamenti da Firestore e lo renderizza.
- * AGGIORNATO: Include la logica per il grafico.
  */
 async function loadAndRenderHistory() {
     const historyColRef = getHistoryCollectionRef();
@@ -146,18 +144,18 @@ async function loadAndRenderHistory() {
         // CORREZIONE: Usiamo query e orderBy per ottenere i documenti ordinati.
         // Ordina per data (decrescente)
         const historyQuery = query(historyColRef, orderBy("date", "desc"), orderBy("endTime", "desc"));
-        
+    
         const querySnapshot = await getDocs(historyQuery); 
-        
+    
         const historyData = [];
         querySnapshot.forEach(doc => {
             historyData.push({ id: doc.id, ...doc.data() });
         });
-
+        
         // --- Preparazione Dati Grafico (Dinamica) ---
         const chartDataArray = [];
         const today = new Date();
-
+        
         if (window.chartTimeRange === 'week') {
             // Logica Settimana (Ultimi 7 giorni)
             const dayLabels = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
@@ -188,12 +186,11 @@ async function loadAndRenderHistory() {
             }
         }
         // --- Fine blocco preparazione dati ---
-
-
+    
         // --- Inizio HTML Lista ---
         let listHtml = '<div class="mt-8 pt-4 border-t border-gray-600"><h4 class="text-xl font-bold text-white mb-4">Lista Allenamenti Recenti</h4><div class="space-y-4">';
         let hasRecentHistory = false;
-
+    
         historyData.forEach(log => {
             hasRecentHistory = true;
             // Assicurati che i dati siano definiti
@@ -201,7 +198,7 @@ async function loadAndRenderHistory() {
             const estimatedCalories = log.estimatedCalories ? log.estimatedCalories : 0;
             const durationDisplay = log.durationDisplay || 'N/A';
             const rating = log.rating || 0;
-
+    
             // Popolamento dati grafico
             const dayData = chartDataArray.find(d => d.dateString === log.date);
             if (dayData) {
@@ -209,13 +206,13 @@ async function loadAndRenderHistory() {
                 dayData.totalCalories += estimatedCalories;
                 dayData.hasWorkout = true;
             }
-
+    
             // Genera stelle per la lista
             let starsHtml = '';
             for (let i = 1; i <= 5; i++) {
                 starsHtml += `<span class="text-xs ${i <= rating ? 'text-yellow-400' : 'text-gray-500'}">&#9733;</span>`;
             }
-
+    
             // Creazione HTML per la lista
             listHtml += `
                 <div class="bg-gray-700 p-4 rounded-lg border border-gray-600 shadow-md">
@@ -234,12 +231,12 @@ async function loadAndRenderHistory() {
                 </div>
             `;
         });
-
+    
         if (!hasRecentHistory) {
              listHtml += '<p class="text-center text-gray-400 p-8">Nessun allenamento trovato nello storico.</p>';
         }
         listHtml += '</div></div>'; // Chiusura space-y-4 e div lista
-
+    
         // --- Preparazione Dati e HTML Grafico ---
         const chartDataForJson = chartDataArray.map(d => ({
             day: d.dayLabel,
@@ -247,7 +244,7 @@ async function loadAndRenderHistory() {
             totalCalories: d.totalCalories,
             hasWorkout: d.hasWorkout
         }));
-
+    
         // Definisce lo stile per i bottoni (attivo/inattivo)
         const weekBtnClass = window.chartTimeRange === 'week' 
             ? 'bg-blue-600 text-white' 
@@ -278,124 +275,24 @@ async function loadAndRenderHistory() {
                 <textarea id="chart-data-dump" class="hidden">${JSON.stringify(chartDataForJson)}</textarea>
             </div>
         `;
-        
+    
         // Se non ci sono dati NEGLI ULTIMI 7 GIORNI, mostra un messaggio nel grafico
         const hasDataForChart = chartDataForJson.some(d => d.hasWorkout);
-
+    
         // Combina Grafico e Lista
         historyContentDiv.innerHTML = chartHtml + listHtml;
-        
+    
         if (hasDataForChart) {
             renderWeeklyChart();
         } else {
             document.getElementById('weekly-chart-container').innerHTML = '<p class="text-center text-gray-400 p-8 flex items-center justify-center h-full">Nessun allenamento negli ultimi 7 giorni per il grafico.</p>';
         }
-
+    
     } catch (error) {
         console.error("Errore nel caricamento dello storico:", error);
         historyContentDiv.innerHTML = `<p class="text-center text-red-500 p-8">Impossibile caricare lo storico: ${error.message}.</p>`;
     }
 }
-window.loadAndRenderHistory = loadAndRenderHistory;
-
-/**
- * Imposta la valutazione (da 1 a 5) e aggiorna l'UI delle stelle.
- */
-function setRating(rating) {
-    window.currentWorkoutRating = rating;
-    const stars = document.querySelectorAll('.rating-star');
-    stars.forEach((star, index) => {
-        if (index < rating) {
-            // Stella piena (gialla)
-            star.classList.remove('text-gray-600');
-            star.classList.add('text-yellow-400');
-            star.innerHTML = '&#9733;'; // Stella piena
-        } else {
-            // Stella vuota (grigia)
-            star.classList.remove('text-yellow-400');
-            star.classList.add('text-gray-600');
-            star.innerHTML = '&#9734;'; // Stella vuota
-        }
-    });
-}
-window.setRating = setRating;
-
-/**
- * Imposta l'intervallo di tempo per il grafico (settimana/mese) e ricarica i dati.
- */
-function setChartTimeRange(range) {
-    if (window.chartTimeRange === range) return; // Non fare nulla se è già selezionato
-    window.chartTimeRange = range;
-    
-    // Ricarica l'intero contenuto della modale per aggiornare grafico e bottoni
-    loadAndRenderHistory();
-}
-window.setChartTimeRange = setChartTimeRange;
-
-/**
- * NUOVA FUNZIONE: Inizializza l'IntersectionObserver per i pallini dello swiper.
- * Viene chiamata da renderDay dopo che l'HTML è stato creato.
- */
-function initSwiperObserver() {
-    const swiperContainer = document.querySelector('.horizontal-snap-container');
-    // Seleziona le card
-    const cards = document.querySelectorAll('.horizontal-snap-child');
-    // Seleziona i pallini
-    const dots = document.querySelectorAll('.swiper-dot');
-
-    if (!swiperContainer || cards.length === 0 || dots.length === 0) {
-        return; // Non fa nulla se non ci sono gli elementi
-    }
-
-    // Opzioni per l'observer:
-    const options = {
-        root: swiperContainer, // Osserva lo scroll all'interno del contenitore
-        rootMargin: '0px',
-        threshold: 0.51 // L'elemento deve essere visibile almeno al 51%
-    };
-
-    const observer = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            // Se l'elemento è quello visibile (intersecante)
-            if (entry.isIntersecting) {
-                // Prendi l'indice (che aggiungeremo a breve)
-                const index = parseInt(entry.target.dataset.index, 10);
-                
-                // Aggiorna i pallini
-                dots.forEach((dot, dotIndex) => {
-                    if (dotIndex === index) {
-                        dot.classList.add('active');
-                    } else {
-                        dot.classList.remove('active');
-                    }
-                });
-            }
-        });
-    }, options);
-
-    // "Attacca" l'observer a ogni card
-    cards.forEach(card => {
-        observer.observe(card);
-    });
-}
-window.initSwiperObserver = initSwiperObserver;
-
-/**
- * NUOVA: Chiude la notifica floating.
- */
-function closeFloatingNotification() {
-    const container = document.getElementById('floating-notification-container');
-    if (container) {
-        // Nasconde la barra facendola scorrere verso l'alto
-        container.classList.add('-translate-y-full');
-    }
-    // Pulisce il timer di chiusura automatica, se esiste
-    if (window.floatingNotificationTimer) {
-        clearTimeout(window.floatingNotificationTimer);
-        window.floatingNotificationTimer = null;
-    }
-}
-window.closeFloatingNotification = closeFloatingNotification;
 
 /**
  * Renderizza il contenuto dinamico della modale profilo.
@@ -450,37 +347,114 @@ function renderProfileContent() {
     `;
 }
 
+/**
+ * Imposta l'intervallo di tempo per il grafico (settimana/mese) e ricarica i dati.
+ */
+function setChartTimeRange(range) {
+    if (window.chartTimeRange === range) return; // Non fare nulla se è già selezionato
+    window.chartTimeRange = range;
+    
+    // Ricarica l'intero contenuto della modale per aggiornare grafico e bottoni
+    loadAndRenderHistory();
+}
+window.setChartTimeRange = setChartTimeRange;
+/**
+ * NUOVA FUNZIONE: Inizializza l'IntersectionObserver per i pallini dello swiper.
+ * Viene chiamata da renderDay dopo che l'HTML è stato creato.
+ */
+function initSwiperObserver() {
+    const swiperContainer = document.querySelector('.horizontal-snap-container');
+    // Seleziona le card
+    const cards = document.querySelectorAll('.horizontal-snap-child');
+    // Seleziona i pallini
+    const dots = document.querySelectorAll('.swiper-dot');
+
+    if (!swiperContainer || cards.length === 0 || dots.length === 0) {
+        return; // Non fa nulla se non ci sono gli elementi
+    }
+
+    // Opzioni per l'observer:
+    const options = {
+        root: swiperContainer, // Osserva lo scroll all'interno del contenitore
+        rootMargin: '0px',
+        threshold: 0.51 // L'elemento deve essere visibile almeno al 51%
+    };
+
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            // Se l'elemento è quello visibile (intersecante)
+            if (entry.isIntersecting) {
+                // Prendi l'indice (che aggiungeremo a breve)
+                const index = parseInt(entry.target.dataset.index, 10);
+
+                // Aggiorna i pallini
+                dots.forEach((dot, dotIndex) => {
+                    if (dotIndex === index) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+            }
+        });
+    }, options);
+
+    // "Attacca" l'observer a ogni card
+    cards.forEach(card => {
+        observer.observe(card);
+    });
+}
+window.initSwiperObserver = initSwiperObserver;
+/**
+ * Imposta la valutazione (da 1 a 5) e aggiorna l'UI delle stelle.
+ */
+function setRating(rating) {
+    window.currentWorkoutRating = rating;
+    const stars = document.querySelectorAll('.rating-star');
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            // Stella piena (gialla)
+            star.classList.remove('text-gray-600');
+            star.classList.add('text-yellow-400');
+            star.innerHTML = '&#9733;'; // Stella piena
+        } else {
+            // Stella vuota (grigia)
+            star.classList.remove('text-yellow-400');
+            star.classList.add('text-gray-600');
+            star.innerHTML = '&#9734;'; // Stella vuota
+        }
+    });
+}
+window.setRating = setRating;
 // --- GESTIONE DATI UTENTE E FIRESTORE ---
 
 function getLogDocumentRef(dayId) {
     if (!window.userId || !window.db || !window.isPersistenceEnabled) return null;
     // Percorso standard per dati privati in Canvas
-    const collectionPath = `artifacts/${window.appId}/users/${window.userId}/workout_logs`;
+    const appId = window.appId || 'default-app-id'; 
+    const collectionPath = `artifacts/${appId}/users/${window.userId}/workout_logs`;
     return doc(window.db, collectionPath, dayId);
 }
-window.getLogDocumentRef = getLogDocumentRef;
 
 /**
  * Riferimento al documento del profilo utente (6 Segmenti).
  */
 function getProfileDocumentRef() {
     if (!window.userId || !window.db || !window.isPersistenceEnabled) return null;
+    const appId = window.appId || 'default-app-id'; 
     // Percorso a 6 segmenti: C/D/C/D/C/D
     return doc(window.db, 
-               `artifacts/${window.appId}/users/${window.userId}/profiles_meta`, 
+               `artifacts/${appId}/users/${window.userId}/profiles_meta`, 
                'data' // Nome del documento
            ); 
 }
-window.getProfileDocumentRef = getProfileDocumentRef;
-
 // NUOVA FUNZIONE: Riferimento alla collezione dello storico
 function getHistoryCollectionRef() {
     if (!window.userId || !window.db || !window.isPersistenceEnabled) return null;
+    const appId = window.appId || 'default-app-id'; 
     // Percorso: artifacts/{appId}/users/{userId}/workout_history
-    return collection(window.db, `artifacts/${window.appId}/users/${window.userId}/workout_history`);
+    return collection(window.db, `artifacts/${appId}/users/${window.userId}/workout_history`);
 }
-window.getHistoryCollectionRef = getHistoryCollectionRef;
-
 /**
  * Carica il profilo utente da Firestore o usa i default, poi aggiorna il titolo.
  */
@@ -513,7 +487,6 @@ async function loadUserProfile() {
         renderUserProfileTitle();
     }
 }
-window.loadUserProfile = loadUserProfile;
 
 /**
  * Salva e aggiorna i dati del profilo utente.
@@ -571,9 +544,7 @@ function renderUserProfileTitle() {
         titleElement.textContent = `💪 Piano di allenamento`;
     }
 }
-
-// --- FIREBASE INITIALIZATION AND AUTHENTICATION ---
-
+// --- FIREBASE INITIALIZATION AND AUTHENTICATION --- 
 // ** CONFIGURAZIONE REINTRODOTTA **
 const MANUAL_FIREBASE_CONFIG = {
     apiKey: "AIzaSyCfTXY1foD8Dr9UxRNzLeOu680aNtIw4TA",
@@ -626,13 +597,9 @@ async function initializeFirebase() {
         window.firebaseApp = initializeApp(firebaseConfig);
         window.db = getFirestore(window.firebaseApp);
         window.auth = getAuth(window.firebaseApp);
-        
-        // --- NUOVA AGGIUNTA ---
         // Imposta la persistenza a "local" (localStorage).
         // Questo manterrà l'utente anonimo loggato anche dopo la chiusura del browser.
         await setPersistence(window.auth, browserLocalPersistence);
-        // --- FINE AGGIUNTA ---
-        
         window.appId = appId; // Store appId globally
 
         // Autenticazione
@@ -657,25 +624,10 @@ async function initializeFirebase() {
                     if (window.userId && window.isPersistenceEnabled) {
                          startDataListener(window.activeDay); 
                     }
-
-                    // --- NUOVA AGGIUNTA QUI ---
-                    // Nasconde la barra di stato dopo 1 secondo
-                    setTimeout(() => {
-                        document.getElementById('status-container')?.classList.add('hidden');
-                    }, 1000); // 1 secondo di ritardo
-                    // --- FINE AGGIUNTA ---
-
                 }).catch(err => {
                      // Fallback se loadUserProfile fallisce, forziamo il rendering
                      console.error("Errore fatale nel caricamento utente, forzo il rendering:", err);
                      renderDay(window.activeDay);
-
-                    // --- NUOVA AGGIUNTA QUI ---
-                    // Nasconde la barra di stato anche in caso di errore
-                    setTimeout(() => {
-                        document.getElementById('status-container')?.classList.add('hidden');
-                    }, 1000);
-                    // --- FINE AGGIUNTA ---
                 });
 
             } else {
@@ -683,13 +635,6 @@ async function initializeFirebase() {
                 window.userId = null;
                 renderUserProfileTitle();
                 renderDay(window.activeDay); // Aggiunto fallback rendering
-
-                // --- NUOVA AGGIUNTA QUI ---
-                // Nasconde la barra di stato se non autenticato
-                setTimeout(() => {
-                    document.getElementById('status-container')?.classList.add('hidden');
-                }, 1000);
-                // --- FINE AGGIUNTA ---
             }
         });
 
@@ -703,17 +648,6 @@ async function initializeFirebase() {
         renderDay(window.activeDay);
     }
 }
-window.initializeFirebase = initializeFirebase;
-
-// --- GESTIONE DATI FIRESTORE (Omesso per brevità, codice invariato) ---
-// (codice di startDataListener, saveWeight, saveNote, ecc. qui)
-
-// --- FUNZIONI DI UTILITY & RENDERING (Omesso per brevità, codice invariato) ---
-// (codice di nextStep, renderGuidedMode, renderDay, ecc. qui)
-
-// ... (resto delle funzioni)
-
-// --- RESTO DELLE FUNZIONI (necessarie per completezza ma omesse per brevità) ---
 function startDataListener(dayId) { /* ... codice invariato ... */ 
     if (!window.db || !window.userId || !window.isPersistenceEnabled) return;
     if (window.unsubscribeListener) { window.unsubscribeListener(); }
@@ -749,7 +683,6 @@ function startDataListener(dayId) { /* ... codice invariato ... */
         document.getElementById('status-message').textContent = 'Errore nel caricamento dei dati in tempo reale.';
     });
 }
-window.startDataListener = startDataListener;
 
 async function saveWeight(dayId, exIndex, setIndex, weight) { /* ... codice invariato ... */
     if (!window.isPersistenceEnabled) { showTemporaryMessage('ATTENZIONE: La persistenza è disabilitata. I dati non saranno salvati.', 'bg-red-500'); return; }
@@ -797,41 +730,19 @@ async function saveNote(dayId, exIndex, note) { /* ... codice invariato ... */
 }
 window.saveNote = saveNote;
 
-/**
- * MODIFICATA: Mostra un messaggio nella nuova barra di notifica floating.
- */
-function showTemporaryMessage(message, colorClass) {
-    const container = document.getElementById('floating-notification-container');
-    const bar = document.getElementById('floating-notification-bar');
-    const text = document.getElementById('floating-notification-text');
-
-    if (!container || !bar || !text) {
-        console.warn("Elementi notifica floating non trovati.");
-        return; 
-    }
-
-    // 1. Cancella il timer precedente se una notifica è già attiva
-    if (window.floatingNotificationTimer) {
-        clearTimeout(window.floatingNotificationTimer);
-    }
-
-    // 2. Imposta testo e colore
-    text.textContent = message;
-    
-    // Rimuovi tutte le vecchie classi di colore
-    bar.classList.remove('bg-red-500', 'bg-green-600', 'bg-blue-600', 'bg-yellow-600', 'bg-purple-600', 'bg-gray-600');
-    // Aggiungi la nuova classe di colore
-    bar.classList.add(colorClass);
-
-    // 3. Mostra la barra facendola scorrere verso il basso
-    container.classList.remove('-translate-y-full');
-
-    // 4. Imposta il timer per l'auto-chiusura (5 secondi)
-    window.floatingNotificationTimer = setTimeout(() => {
-        closeFloatingNotification();
-    }, 5000); // 5 secondi, come hai richiesto
+function showTemporaryMessage(message, colorClass) { /* ... codice invariato ... */
+    const statusMessage = document.getElementById('status-message');
+    const originalText = statusMessage.textContent;
+    const originalClass = statusMessage.className;
+    statusMessage.textContent = message;
+    statusMessage.className = `text-sm font-medium text-white p-2 rounded ${colorClass}`;
+    setTimeout(() => {
+        if (statusMessage.textContent === message) {
+            statusMessage.textContent = originalText;
+            statusMessage.className = originalClass;
+        }
+    }, 3000);
 }
-window.showTemporaryMessage = showTemporaryMessage;
 
 async function generateExerciseTip(exerciseName, exerciseElement) { /* ... codice invariato ... */
     const apiKey = "AIzaSyDnrW-1uba9UTTyKJoGctm8eW8F5lSXmtE";
@@ -873,8 +784,6 @@ async function generateExerciseTip(exerciseName, exerciseElement) { /* ... codic
 window.generateExerciseTip = generateExerciseTip;
 
 function getImageUrl(exercise) { /* ... codice invariato ... */ return exercise.imageUrl || `https://placehold.co/400x200/800080/ffffff/png?text=IMMAGINE+PER+${encodeURIComponent(exercise.name.toUpperCase().replace(/\s/g, '+'))}`; }
-window.getImageUrl = getImageUrl;
-
 function calculateTonnageForSet(repsString, weight) { /* ... codice invariato ... */
     const w = parseFloat(weight); if (isNaN(w) || w === null || w <= 0) { return 0; }
     let repsMatch = repsString.match(/(\d+)/); let reps = repsMatch ? parseInt(repsMatch[1], 10) : 1; 
@@ -902,7 +811,6 @@ window.updateTonnageDisplay = updateTonnageDisplay;
 function getRestTimeSeconds(restString) { /* ... codice invariato ... */
     const match = restString.match(/(\d+)/); return match ? parseInt(match[1], 10) : 0;
 }
-window.getRestTimeSeconds = getRestTimeSeconds;
 
 function updateTimerDisplay(timerId, seconds, isGuided = false) { /* ... codice invariato ... */
     const minutes = Math.floor(seconds / 60); const secs = seconds % 60; const display = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -917,10 +825,12 @@ function updateTimerDisplay(timerId, seconds, isGuided = false) { /* ... codice 
          if (button) {
              button.classList.remove('bg-yellow-600', 'hover:bg-yellow-700', 'bg-green-600', 'hover:bg-green-700', 'bg-red-600');
              if (timerState && timerState.isRunning) {
-                 button.textContent = `RIPOSO IN CORSO`; button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                 button.textContent = `RIPOSO IN CORSO`; 
+                 button.classList.add('bg-blue-600', 'hover:bg-blue-700');
                  if (terminateButton) terminateButton.classList.remove('hidden');
              } else {
-                 button.textContent = 'Avvia Riposo'; button.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                 button.textContent = 'Avvia Riposo'; 
+                 button.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
                  if (terminateButton) terminateButton.classList.add('hidden');
              }
          }
@@ -1024,7 +934,7 @@ window.startGuidedMode = startGuidedMode;
 function stopGuidedMode() {
     // 1. Ferma il timer
     stopTotalTimer(); 
-    
+
     // 2. Ottieni i dati
     const dayData = window.workoutDays[window.activeDay];
     const dayName = dayData ? dayData.name : "Allenamento";
@@ -1032,11 +942,11 @@ function stopGuidedMode() {
     // 3. Calcola le calorie parziali
     const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 70;
     window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight);
-    
+
     // 4. Mostra la schermata di riepilogo e valutazione
     // (Questo codice è copiato da nextStep, ma con titolo diverso)
     showTemporaryMessage(`Allenamento Interrotto in ${document.getElementById('total-timer').textContent.split(': ').pop()}`, 'bg-yellow-600');
-    
+
     document.getElementById('workout-content').innerHTML = 
         `<div class="p-8 text-center bg-gray-700 rounded-xl shadow-2xl">` +
             `<h2 class="text-4xl font-extrabold text-yellow-400 mb-4">✋ ALLENAMENTO INTERROTTO</h2>` +
@@ -1044,7 +954,7 @@ function stopGuidedMode() {
             `<p class="text-2xl font-extrabold text-green-400 mt-4">Volume Totale: ${Math.round(window.totalTonnage).toLocaleString('it-IT')} kg</p>` +
             `<p class="text-2xl font-extrabold text-red-400 mt-2">🔥 Calorie Stimate: ${window.totalCalories.toLocaleString('it-IT')} kcal</p>` +
             `<p id="final-time-display" class="text-2xl font-extrabold text-white mt-4">${document.getElementById('total-timer').textContent}</p>` +
-            
+
             `<!-- Selettore Stelle -->` +
             `<div class="mt-6">` +
                 `<p class="text-lg text-gray-300 mb-2">Come valuti questo allenamento?</p>` +
@@ -1089,12 +999,12 @@ function __internal_cleanup_guided_mode() {
         } 
     } 
     activeTimers = {};
-    
+
     // 7. Ripristina l'interfaccia
     document.getElementById('day-tabs').classList.remove('hidden'); 
     document.getElementById('mode-toggle-button').classList.remove('hidden');
     document.getElementById('guided-controls-container').classList.add('hidden'); 
-    
+
     // 8. Renderizza la visualizzazione standard
     renderDay(window.activeDay);
 }
@@ -1105,7 +1015,7 @@ window.__internal_cleanup_guided_mode = __internal_cleanup_guided_mode;
 function skipExercise() {
     const dayId = window.activeDay;
     const exIndex = window.currentExIndex;
-    
+
     // Dobbiamo usare la lista di esercizi del giorno attivo
     const dayExercises = window.workoutDays[dayId].exercises;
 
@@ -1118,38 +1028,23 @@ function skipExercise() {
     // 1. Rimuovi l'esercizio corrente dalla sua posizione
     // usiamo splice(indice, 1)[0] per estrarlo
     const exerciseToMove = dayExercises.splice(exIndex, 1)[0];
-    
+
     // 2. Aggiungilo alla fine dell'array
     dayExercises.push(exerciseToMove);
-    
+
     // 3. Resetta il contatore delle serie per il nuovo esercizio
     //    (altrimenti inizierebbe dalla serie 2 o 3)
     window.currentSet = 1;
 
     // 4. Mostra un messaggio
     showTemporaryMessage(`'${exerciseToMove.name}' saltato. Verrà riproposto alla fine.`, 'bg-blue-600');
-    
+
     // 5. Ricarica la vista guidata (mostrerà il nuovo es. all'indice corrente)
     renderGuidedMode();
 }
 window.skipExercise = skipExercise;
 /**
- * Salva e aggiorna i dati del profilo utente.
- */
-async function saveAndExitGuidedMode(dayName) {
-    // 1. Salva i dati, passando la valutazione
-    await logWorkoutHistory(dayName, window.currentWorkoutRating);
-    
-    // 2. Resetta la valutazione per il prossimo allenamento
-    window.currentWorkoutRating = 0;
-    
-    // 3. Chiudi la modalità guidata
-    window.__internal_cleanup_guided_mode();
-}
-window.saveAndExitGuidedMode = saveAndExitGuidedMode;
-/**
  * Disegna il grafico settimanale utilizzando Chart.js
- * Questa funzione viene chiamata DOPO che l'HTML è stato inserito.
  */
 function renderWeeklyChart() {
     const canvasElement = document.getElementById('weeklyChart');
@@ -1157,7 +1052,7 @@ function renderWeeklyChart() {
         console.warn("Elemento Canvas 'weeklyChart' non trovato.");
         return;
     }
-
+    
     // --- NUOVO: Distrugge il grafico precedente se esiste ---
     const existingChart = Chart.getChart(canvasElement);
     if (existingChart) {
@@ -1166,11 +1061,8 @@ function renderWeeklyChart() {
     // --- FINE NUOVO CODICE ---
     const dataDumpElement = document.getElementById('chart-data-dump');
 
-    if (!dataDumpElement || !canvasElement) {
-        console.warn("Elementi del grafico non trovati. Rendering saltato.");
-        return;
-    }
-    
+    if (!dataDumpElement || !canvasElement) return;
+
     try {
         const rawData = JSON.parse(dataDumpElement.value);
         
@@ -1212,15 +1104,6 @@ function renderWeeklyChart() {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { 
-                            labels: { color: 'white' } 
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false
-                        }
-                    },
                     scales: {
                         x: {
                             ticks: { color: 'white' },
@@ -1233,7 +1116,7 @@ function renderWeeklyChart() {
                             ticks: { color: 'white' },
                             grid: { color: 'rgba(255, 255, 255, 0.1)' },
                             min: 0,
-                            suggestedMax: Math.max(...tonnageValues) > 0 ? Math.max(...tonnageValues) * 1.2 : 1000 // Aumenta il massimo per leggibilità
+                            suggestedMax: Math.max(...tonnageValues) * 1.2 || 1000 // Aumenta il massimo per leggibilità
                         },
                         'y-calories': {
                             type: 'linear',
@@ -1245,22 +1128,21 @@ function renderWeeklyChart() {
                             suggestedMax: Math.max(...calorieValues) > 0 ? Math.max(...calorieValues) * 1.2 : 100 // <-- AGGIUNGI QUESTO
                         }
                     },
+                    plugins: {
+                        legend: { labels: { color: 'white' } }
+                    }
                 }
             });
             // Nascondi l'elemento temporaneo di caricamento
             document.getElementById('weekly-chart-container').classList.remove('min-h-[250px]');
         } else {
              console.error("Chart.js non è definito. Assicurati che il CDN sia caricato correttamente.");
-             document.getElementById('weekly-chart-container').innerHTML = '<p class="text-center text-red-500 p-8">Errore: Libreria Grafici (Chart.js) non caricata.</p>';
         }
 
     } catch (e) {
         console.error("Errore durante il parsing o il rendering del grafico:", e);
-        document.getElementById('weekly-chart-container').innerHTML = '<p class="text-center text-red-500 p-8">Errore durante la generazione del grafico.</p>';
     }
 }
-window.renderWeeklyChart = renderWeeklyChart;
-
 async function logWorkoutHistory(dayName, rating) {
     const historyColRef = getHistoryCollectionRef();
     if (!historyColRef) return;
@@ -1276,28 +1158,28 @@ async function logWorkoutHistory(dayName, rating) {
         dayName: dayName,
         totalTonnage: Math.round(window.totalTonnage),
         estimatedCalories: Math.round(window.totalCalories || 0),
-        rating: rating || 0 // <-- AGGIUNGI QUESTA RIGA
+        rating: rating || 0 
     };
 
     try {
         // Usiamo addDoc per creare un nuovo documento con ID automatico
-        await addDoc(historyColRef, workoutLog); 
+        // await setDoc(doc(historyColRef), workoutLog); 
+        await addDoc(historyColRef, workoutLog);
         showTemporaryMessage('Allenamento salvato nello storico!', 'bg-green-600');
     } catch (error) {
         console.error("Errore nel log dello storico:", error);
         showTemporaryMessage(`Errore nel salvataggio storico: ${error.message}`, 'bg-red-500');
     }
 }
-window.logWorkoutHistory = logWorkoutHistory;
-
-function nextStep() { /* ... codice invariato ... */
+window.stopGuidedMode = stopGuidedMode;
+function nextStep() { 
     const dayData = window.workoutDays[window.activeDay]; const currentExercise = dayData.exercises[window.currentExIndex]; const setKey = `set_${window.currentSet}`;
     const isTimedExercise = currentExercise.sets === 0 || currentExercise.rest === "N/A" || !currentExercise.sets;
     if (!isTimedExercise) {
         // --- INIZIO CORREZIONE TONNELLAGGIO ---
         let weightToCalculate = null;
         let weightNeedsSaving = false; // Flag per salvare il default
-
+        
         // 1. Controlla se esiste un peso loggato (salvato da 'onchange')
         if (currentExercise.logged_weights && currentExercise.logged_weights[setKey] !== undefined && currentExercise.logged_weights[setKey] !== null) {
             weightToCalculate = parseFloat(currentExercise.logged_weights[setKey]);
@@ -1315,7 +1197,7 @@ function nextStep() { /* ... codice invariato ... */
             window.totalTonnage += tonnage; 
             window.exerciseTonnageMap[window.currentExIndex] = (window.exerciseTonnageMap[window.currentExIndex] || 0) + tonnage; 
             updateTonnageDisplay();
-            
+        
             // Se stiamo usando il peso di default, salviamolo ora in background
             if (weightNeedsSaving && window.isPersistenceEnabled) {
                 // Chiamiamo saveWeight in background (non c'è bisogno di 'await')
@@ -1326,7 +1208,7 @@ function nextStep() { /* ... codice invariato ... */
             // Non mostrare un errore, l'utente potrebbe aver saltato la serie (peso 0 o nullo)
             console.log(`Set ${window.currentSet} saltato (nessun peso) per ${currentExercise.name}. Tonnellaggio non aggiunto.`);
         }
-        // --- FINE CORREZIONE TONNELLAGGIO ---
+        // --- FINE CORREZIONE TONNELLAGGIO ---   
     }
     const timerId = `timer-display-${window.activeDay}-${window.currentExIndex}`; if (activeTimers[timerId] && activeTimers[timerId].interval) { clearInterval(activeTimers[timerId].interval); } activeTimers[timerId] = null;
     if (!isTimedExercise && window.currentSet < currentExercise.sets) {
@@ -1339,41 +1221,53 @@ function nextStep() { /* ... codice invariato ... */
     stopTotalTimer(); 
     // NUOVO: Calcola le calorie stimate totali con aggiustamento peso
     // Utilizza window.userProfile.weight, con fallback a 70 kg se non definito
-    const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 70;
+    const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 50;
     window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight);
     // *** NUOVA CHIAMATA PER LOGGARE L'ALLENAMENTO ***
-    // logWorkoutHistory(dayData.name); // Rimossa, ora si salva dalla schermata delle stelle
+    //logWorkoutHistory(dayData.name); 
     // ***********************************************
     showTemporaryMessage(`Allenamento terminato in ${document.getElementById('total-timer').textContent.split(': ').pop()}!`, 'bg-purple-600');
-    document.getElementById('workout-content').innerHTML = 
-        `<div class="p-8 text-center bg-gray-700 rounded-xl shadow-2xl">` +
-            `<h2 class="text-4xl font-extrabold text-green-400 mb-4">🏆 ALLENAMENTO COMPLETATO! 🥳</h2>` +
-            `<p class="text-xl text-gray-300">Complimenti! Hai completato tutti gli esercizi per ${dayData.name}.</p>` +
-            `<p class="text-2xl font-extrabold text-yellow-400 mt-4">Volume Totale: ${Math.round(window.totalTonnage).toLocaleString('it-IT')} kg</p>` +
-            `<p class="text-2xl font-extrabold text-red-400 mt-2">🔥 Calorie Stimate: ${window.totalCalories.toLocaleString('it-IT')} kcal</p>` +
-            `<p id="final-time-display" class="text-2xl font-extrabold text-white mt-4">${document.getElementById('total-timer').textContent}</p>` +
-            
-            `<!-- NUOVO: Selettore Stelle -->` +
-            `<div class="mt-6">` +
-                `<p class="text-lg text-gray-300 mb-2">Come valuti questo allenamento?</p>` +
-                `<div class="flex justify-center items-center space-x-2 text-4xl cursor-pointer">` +
-                    `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(1)">&#9734;</span>` +
-                    `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(2)">&#9734;</span>` +
-                    `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(3)">&#9734;</span>` +
-                    `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(4)">&#9734;</span>` +
-                    `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(5)">&#9734;</span>` +
-                `</div>` +
-            `</div>` +
-
-            `<!-- MODIFICATO: Bottone Salva e Torna -->` +
-            `<button onclick="window.saveAndExitGuidedMode('${dayData.name}')" class="mt-8 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 transition duration-150 shadow-lg">Salva e Torna</button>` +
-        `</div>`;
-
+    document.getElementById('workout-content').innerHTML = `<div class="p-8 text-center bg-gray-700 rounded-xl shadow-2xl"><h2 class="text-4xl font-extrabold text-green-400 mb-4">🏆 ALLENAMENTO COMPLETATO! 🥳</h2>
+    <p class="text-xl text-gray-300">Complimenti! Hai completato tutti gli esercizi per ${dayData.name}.</p>
+    <p class="text-2xl font-extrabold text-yellow-400 mt-4">Volume Totale: ${Math.round(window.totalTonnage).toLocaleString('it-IT')} kg</p>
+    <p class="text-2xl font-extrabold text-red-400 mt-2">🔥 Calorie Stimate: ${window.totalCalories.toLocaleString('it-IT')} kcal</p>
+    // ...
+    <p id="final-time-display" class="text-2xl font-extrabold text-white mt-4">${document.getElementById('total-timer').textContent}</p>` +
+    
+    `<!-- NUOVO: Selettore Stelle -->` +
+    `<div class="mt-6">` +
+        `<p class="text-lg text-gray-300 mb-2">Come valuti questo allenamento?</p>` +
+        `<div class="flex justify-center items-center space-x-2 text-4xl cursor-pointer">` +
+            `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(1)">&#9734;</span>` +
+            `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(2)">&#9734;</span>` +
+            `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(3)">&#9734;</span>` +
+            `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(4)">&#9734;</span>` +
+            `<span class="rating-star text-gray-600 hover:text-yellow-500 transition-colors" onclick="window.setRating(5)">&#9734;</span>` +
+        `</div>` +
+    `</div>` +
+    
+    `<!-- MODIFICATO: Bottone Salva e Torna -->` +
+    `<button onclick="window.saveAndExitGuidedMode('${dayData.name}')" class="mt-8 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 transition duration-150 shadow-lg">Salva e Torna</button>` +
+    `</div>`;
     window.isGuidedMode = false; window.currentExIndex = 0; window.currentSet = 1; isRestPeriodActive = false; document.getElementById('guided-controls-container').classList.add('hidden');
 }
 window.nextStep = nextStep;
+/**
+ * Salva lo storico (con la valutazione) e esce dalla modalità guidata.
+ */
+async function saveAndExitGuidedMode(dayName) {
+    // 1. Salva i dati, passando la valutazione
+    await logWorkoutHistory(dayName, window.currentWorkoutRating);
+    
+    // 2. Resetta la valutazione per il prossimo allenamento
+    window.currentWorkoutRating = 0;
+    
+    // 3. Chiudi la modalità guidata
+    window.__internal_cleanup_guided_mode();
+}
+window.saveAndExitGuidedMode = saveAndExitGuidedMode;
 
-function renderGuidedMode() { /* ... codice invariato ... */
+function renderGuidedMode() { 
     const dayData = window.workoutDays[window.activeDay]; const contentDiv = document.getElementById('workout-content');
     if (window.currentExIndex >= dayData.exercises.length) { nextStep(); return; }
     const exercise = dayData.exercises[window.currentExIndex]; const exIndex = window.currentExIndex; const restSeconds = getRestTimeSeconds(exercise.rest); const timerId = `timer-display-${window.activeDay}-${exIndex}`;
@@ -1383,21 +1277,12 @@ function renderGuidedMode() { /* ... codice invariato ... */
     const currentExTonnage = Math.round(window.exerciseTonnageMap[exIndex] || 0);
     const isTimerRunning = activeTimers[timerId] && activeTimers[timerId].isRunning && activeTimers[timerId].seconds > 0;
     const nextStepAction = (isTimerRunning || isTimedExercise) ? 'window.nextStep()' : `window.toggleTimer('${window.activeDay}', ${exIndex}, '${exercise.rest}', true)`;
-    let html = `<div class="bg-gray-800 p-6 mb-6 rounded-xl shadow-2xl border-4 border-blue-500/50">
-    <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
-        <h3 class="text-2xl font-extrabold text-white">${exercise.name}</h3>
-        ${!isTimedExercise ? `<span class="text-4xl font-mono font-bold text-yellow-400 p-2 bg-gray-700 rounded-lg">${window.currentSet}/${exercise.sets}</span>` : ''}
-    </div>
-    <div class="flex flex-col md:flex-row gap-6">
-        <div class="flex-shrink-0 w-full md:w-1/2">
-            <img src="${getImageUrl(exercise)}" alt="Immagine di ${exercise.name}" onerror="this.onerror=null; this.src='https://placehold.co/400x200/800080/ffffff/png?text=IMMAGINE+NON+DISPONIBILE';" class="w-full h-auto object-cover rounded-lg border border-gray-600 shadow-md aspect-[4/3]">
-            ${!isTimedExercise ? `
-            <div class="mt-4 p-4 bg-gray-900 rounded-xl">
-                <label for="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="text-sm font-semibold mb-2 block text-yellow-300">Peso per Serie ${window.currentSet} (Reps: ${exercise.reps})</label>
-                <input type="number" step="0.5" value="${currentWeight}" onchange="window.saveWeight('${window.activeDay}', ${exIndex}, ${window.currentSet - 1}, this.value)" id="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="w-full p-3 text-2xl text-white bg-gray-700 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-center" placeholder="Peso (kg)">
-                <p class="text-sm text-gray-400 mt-2 text-center">Tonnellaggio attuale esercizio: <span class="text-green-400 font-bold">${currentExTonnage.toLocaleString('it-IT')} kg</span></p>
-            </div>
-            
+    let html = `<div class="bg-gray-800 p-6 mb-6 rounded-xl shadow-2xl border-4 border-blue-500/50"><div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
+    <h3 class="text-2xl font-extrabold text-white">${exercise.name}</h3>${!isTimedExercise ? `<span class="text-2xl font-mono font-bold text-yellow-400 p-2 bg-gray-700 rounded-lg">${window.currentSet}/${exercise.sets}</span>` : ''}</div><div class="flex flex-col md:flex-row gap-6"><div class="flex-shrink-0 w-full md:w-1/2"><img src="${getImageUrl(exercise)}" alt="Immagine di ${exercise.name}" onerror="this.onerror=null; this.src='https://placehold.co/400x200/800080/ffffff/png?text=IMMAGINE+NON+DISPONIBILE';" class="w-full h-auto object-cover rounded-lg border border-gray-600 shadow-md aspect-[4/3]">
+    ${!isTimedExercise ? `<div class="mt-4 p-4 bg-gray-900 rounded-xl">
+            <label for="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="text-sm font-semibold mb-2 block text-yellow-300">Peso per Serie ${window.currentSet} (Reps: ${exercise.reps})</label>
+            <input type="number" step="0.5" value="${currentWeight}" onchange="window.saveWeight('${window.activeDay}', ${exIndex}, ${window.currentSet - 1}, this.value)" id="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="w-full p-3 text-2xl text-white bg-gray-700 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-center" placeholder="Peso (kg)">
+                <p class="text-sm text-gray-400 mt-2 text-center">Tonnellaggio attuale esercizio: <span class="text-green-400 font-bold">${currentExTonnage.toLocaleString('it-IT')} kg</span></p></div>
             <!-- Blocco Timer Spostato e Ristilizzato -->
             <div class="mt-4 p-4 bg-gray-900 rounded-xl"> 
                 <p class="text-sm text-gray-400 mb-2">Recupero Previsto: <span class="text-yellow-300 font-semibold">${exercise.rest}</span></p>
@@ -1406,39 +1291,26 @@ function renderGuidedMode() { /* ... codice invariato ... */
                     <span id="${timerId}" class="text-4xl font-mono tracking-wider text-white flex-shrink-0 min-w-[90px] text-right">${String(Math.floor(restSeconds / 60)).padStart(2, '0')}:${String(restSeconds % 60).padStart(2, '0')}</span>
                 </div>
                 <button id="terminate-button-${window.activeDay}-${exIndex}" onclick="window.terminateRest('${window.activeDay}', ${exIndex})" class="hidden mt-2 px-4 py-2 bg-red-700 text-white font-semibold rounded-full hover:bg-red-800 transition duration-150 shadow-md">Termina in Anticipo</button>
-            </div>
-            ` : `<div class="mt-4 p-4 bg-gray-700 rounded-xl text-center"><p class="text-lg font-bold text-green-400">DURATA: ${exercise.reps}</p><button onclick="window.nextStep()" class="mt-4 px-4 py-2 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition duration-150 shadow-lg">COMPLETATO (Passa al Prossimo)</button></div>`}
+            </div>`	  		
+        : `<div class="mt-4 p-4 bg-gray-700 rounded-xl text-center"><p class="text-lg font-bold text-green-400">DURATA: ${exercise.reps}</p><button onclick="window.nextStep()" class="mt-4 px-4 py-2 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition duration-150 shadow-lg">COMPLETATO (Passa al Prossimo)</button></div>`}</div><div class="flex-grow flex flex-col justify-start"><p class="text-base text-gray-300 mb-4">${isTimedExercise ? `Concentrati sul mantenimento del ritmo o dell'intensità per la durata di ${exercise.reps}.` : `Esegui la tua ${window.currentSet}a serie. Concentrati sulla forma per ${exercise.reps} ripetizioni.`}</p>
+    <!-- Blocco MODIFICATO con bottone AI e Salta -->
+    <div class="mb-6">
+        <div class="flex flex-col sm:flex-row gap-2">
+            <!-- NUOVO: Bottone Salta -->
+            <button onclick="window.skipExercise()" class="w-full sm:w-1/2 px-4 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition duration-150 shadow-md flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+                Salta per Ora
+            </button>
+            <!-- Bottone AI (ora occupa metà spazio su schermi medi) -->
+            <button id="tip-btn-${window.activeDay}-${exIndex}" onclick="generateExerciseTip('${exercise.name}', document.getElementById('tip-output-${window.activeDay}-${exIndex}'))" class="w-full sm:w-1/2 px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition duration-150 shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">✨ Consiglio AI</button>			
         </div>
-        <div class="flex-grow flex flex-col justify-start">
-            <p class="text-base text-gray-300 mb-4">${isTimedExercise ? `Concentrati sul mantenimento del ritmo o dell'intensità per la durata di ${exercise.reps}.` : `Esegui la tua ${window.currentSet}a serie. Concentrati sulla forma per ${exercise.reps} ripetizioni.`}</p>
-            
-            <!-- Blocco MODIFICATO con bottone AI e Salta -->
-            <div class="mb-6">
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <!-- Bottone AI (ora occupa metà spazio su schermi medi) -->
-                    <button id="tip-btn-${window.activeDay}-${exIndex}" onclick="generateExerciseTip('${exercise.name}', document.getElementById('tip-output-${window.activeDay}-${exIndex}'))" class="w-full sm:w-1/2 px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition duration-150 shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">✨ Consiglio AI</button>
-                    
-                    <!-- NUOVO: Bottone Salta -->
-                    <button onclick="window.skipExercise()" class="w-full sm:w-1/2 px-4 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition duration-150 shadow-md flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
-                        Salta per Ora
-                    </button>
-                </div>
-                <!-- Output del consiglio AI -->
-                <div id="tip-output-${window.activeDay}-${exIndex}" class="p-3 mt-2 bg-gray-900 rounded-lg text-gray-400 min-h-[50px] flex items-center"><span class="text-xs">${exercise.notes ? `Nota Predefinita: ${exercise.notes}` : 'Clicca per un consiglio sul corretto svolgimento.'}</span></div>
-            </div>
-        </div>
+        <!-- Output del consiglio AI -->
+        <div id="tip-output-${window.activeDay}-${exIndex}" class="p-3 mt-2 bg-gray-900 rounded-lg text-gray-400 min-h-[50px] flex items-center"><span class="text-xs">${exercise.notes ? `Nota Predefinita: ${exercise.notes}` : 'Clicca per un consiglio sul corretto svolgimento.'}</span></div>
     </div>
-    <div class="mt-6 border-t border-gray-700 pt-4">
-        <label for="notes-guided-${exIndex}" class="font-bold mb-2 block text-sm text-white">Note Personali per l'Esercizio:</label>
-        <textarea id="notes-guided-${exIndex}" rows="1" placeholder="${exercise.notes || 'Aggiungi note personali su esecuzione, sensazioni... (Es. presa stretta, cedimento)'}" onchange="window.saveNote('${window.activeDay}', ${exIndex}, this.value)" class="w-full p-3 text-sm text-white bg-gray-700 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 shadow-inner">${(exercise.logged_notes && exercise.logged_notes.trim()) ? exercise.logged_notes : ''}</textarea>
-    </div>
-</div>`;
+    </div></div><div class="mt-6 border-t border-gray-700 pt-4"><label for="notes-guided-${exIndex}" class="font-bold mb-2 block text-sm text-white">Note Personali per l'Esercizio:</label><textarea id="notes-guided-${exIndex}" rows="1" placeholder="${exercise.notes || 'Aggiungi note personali su esecuzione, sensazioni... (Es. presa stretta, cedimento)'}" onchange="window.saveNote('${window.activeDay}', ${exIndex}, this.value)" class="w-full p-3 text-sm text-white bg-gray-700 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 shadow-inner">${(exercise.logged_notes && exercise.logged_notes.trim()) ? exercise.logged_notes : ''}</textarea></div></div>`;
     contentDiv.innerHTML = html;
     if (!isTimedExercise) { updateTimerDisplay(timerId, activeTimers[timerId] ? activeTimers[timerId].seconds : restSeconds, true); }
 }
-window.renderGuidedMode = renderGuidedMode;
-
 function switchDay(newDayId) { /* ... codice invariato ... */
     if (window.isGuidedMode) { stopGuidedMode(); }
     if (window.activeDay === newDayId) return; window.activeDay = newDayId;
@@ -1450,67 +1322,46 @@ function switchDay(newDayId) { /* ... codice invariato ... */
     });
 }
 window.switchDay = switchDay;
-/**
- * MODIFICATA: Renderizza la visualizzazione "riepilogo" compatta,
- * rimuovendo input e logica non necessari prima dell'allenamento.
- */
+
 function renderDay(dayId) {
     const dayData = window.workoutDays[dayId]; const contentDiv = document.getElementById('workout-content');
-    
-    // Reimposta l'interfaccia (mostra i tab, nascondi i controlli della guida)
-    document.getElementById('mode-toggle-button').classList.remove('hidden'); 
-    document.getElementById('guided-controls-container').classList.add('hidden'); 
-    document.getElementById('day-tabs').classList.remove('hidden'); 
-    document.getElementById('total-timer').classList.add('hidden');
-    
-    if (!dayData) { 
-        contentDiv.innerHTML = '<p class="text-red-500">Giorno di allenamento non trovato.</p>'; 
-        return; 
-    }
-    
-    // Inizializza l'HTML con il titolo del giorno
+    document.getElementById('mode-toggle-button').classList.remove('hidden'); document.getElementById('guided-controls-container').classList.add('hidden'); document.getElementById('day-tabs').classList.remove('hidden'); document.getElementById('total-timer').classList.add('hidden');
+    if (!dayData) { contentDiv.innerHTML = '<p class="text-red-500">Giorno di allenamento non trovato.</p>'; return; }
     let titleHtml = `<h2 class="text-2xl font-bold mb-6 text-blue-400">${dayData.name}</h2>`;
     let cardsHtml = ''; // Nuova variabile per accumulare solo le card
-    
-    // Inizia il loop per ogni esercizio
     dayData.exercises.forEach((exercise, exIndex) => {
-    
-        // --- INIZIO NUOVA VISUALIZZAZIONE COMPATTA ---
         const restSeconds = getRestTimeSeconds(exercise.rest); 
         const timerId = `timer-display-${dayId}-${exIndex}`; 
-        const isTimedExercise = exercise.sets === 0 || exercise.rest === "N/A" || !exercise.sets;
-        
+        const isTimedExercise = exercise.sets === 0 || exercise.rest === "N/A" || !exercise.sets;			
+        // --- Costruiamo la card compatta ---
         cardsHtml += `<div class="horizontal-snap-child" data-index="${exIndex}">
-                <div class="bg-gray-800 p-4 m-1 rounded-xl shadow-lg border border-gray-700">
-                    <div class="flex flex-col sm:flex-row gap-4">
-
-                        <!-- Immagine (dal tuo codice originale) -->
-                        <div class="flex-shrink-0 w-full sm:w-1-3">
-                            <img src="${getImageUrl(exercise)}" alt="Immagine di ${exercise.name}" onerror="this.onerror=null; this.src='https.placehold.co/400x200/800080/ffffff/png?text=LINK+NON+PUBBLICO!+Carica+un+link+diretto';" class="w-full h-auto object-cover rounded-lg border border-gray-600 shadow-md aspect-[4/3]">
-                        </div>
-
-                        <!-- Info Esercizio (dal tuo codice originale) -->
-                        <div class="flex-grow flex flex-col justify-center">
-                            <div>
-                                <h3 class="text-2xl font-bold mb-1 text-white">${exercise.name}</h3>
-                                <p class="text-sm text-gray-400">Ripetizioni/Durata: <span class="text-blue-300 font-semibold">${exercise.reps}</span></p>
+                        <div class="bg-gray-800 p-4 m-1 rounded-xl shadow-lg border border-gray-700">
+                            <div class="flex flex-col sm:flex-row gap-4">
+    
+                <!-- Immagine (dal tuo codice originale) -->
+                <div class="flex-shrink-0 w-full sm:w-1/3">
+                    <img src="${getImageUrl(exercise)}" alt="Immagine di ${exercise.name}" onerror="this.onerror=null; this.src='https.placehold.co/400x200/800080/ffffff/png?text=LINK+NON+PUBBLICO!+Carica+un+link+diretto';" class="w-full h-auto object-cover rounded-lg border border-gray-600 shadow-md aspect-[4/3]">
+                </div>
+    
+                <!-- Info Esercizio (dal tuo codice originale) -->
+                <div class="flex-grow flex flex-col justify-center">
+                    <div>
+                        <h3 class="text-2xl font-bold mb-1 text-white">${exercise.name}</h3>
+                        <p class="text-sm text-gray-400">Ripetizioni/Durata: <span class="text-blue-300 font-semibold">${exercise.reps}</span></p>
+                    </div>
+                    ${!isTimedExercise ? `<div class="mt-4"><p class="text-sm text-gray-400">Recupero Previsto: <span class="text-yellow-300 font-semibold">${exercise.rest}</span></p></div>` : `<p class="text-sm text-gray-400 mt-2 p-3 bg-gray-700 rounded-lg">Modalità: <span class="text-green-400 font-bold">Continuo / Durata (Non a Serie)</span></p>`}
+    
+                    <!-- Aggiunta della Nota di Default (solo se esiste) -->
+                    ${exercise.notes ? `
+                    <p class="text-xs text-gray-400 italic mt-3 pt-2 border-t border-gray-700">
+                        Nota: ${exercise.notes}
+                    </p>
+                    ` : ''}
                             </div>
-                            ${!isTimedExercise ? `<div class="mt-4"><p class="text-sm text-gray-400">Recupero Previsto: <span class="text-yellow-300 font-semibold">${exercise.rest}</span></p></div>` : `<p class="text-sm text-gray-400 mt-2 p-3 bg-gray-700 rounded-lg">Modalità: <span class="text-green-400 font-bold">Continuo / Durata (Non a Serie)</span></p>`}
-
-                            <!-- Aggiunta della Nota di Default (solo se esiste) -->
-                            ${exercise.notes ? `
-                            <p class="text-xs text-gray-400 italic mt-3 pt-2 border-t border-gray-700">
-                                Nota: ${exercise.notes}
-                            </p>
-                            ` : ''}
                         </div>
                     </div>
-                </div>
-            </div>`; // <-- Blocco corretto, senza il div extra
-        // --- FINE NUOVA VISUALIZZAZIONE COMPATTA ---
-
-    }); // <-- Questa è la chiusura del loop
-    
+                </div>`; // <-- Aggiunto /div di chiusura per horizontal-snap-child
+    });
     // --- NUOVA AGGIUNTA: Genera i pallini ---
     let dotsHtml = '<div class="swiper-dots">';
     dayData.exercises.forEach((_, index) => {
@@ -1520,7 +1371,6 @@ function renderDay(dayId) {
     });
     dotsHtml += '</div>';
     // --- FINE AGGIUNTA ---
-    
     // Costruisce l'HTML finale avvolgendo le card e aggiungendo i pallini
     let finalHtml = titleHtml + 
                     `<div class="horizontal-snap-container no-scrollbar -mx-1">
@@ -1528,14 +1378,11 @@ function renderDay(dayId) {
                     </div>` +
                     dotsHtml; // <-- AGGIUNTA DEI PALLINI
     
-    // Scrive l'HTML finale nel contenitore
     contentDiv.innerHTML = finalHtml;
-
     // --- NUOVA AGGIUNTA: Avvia l'observer ---
     // Deve essere chiamato DOPO aver scritto l'innerHTML
     window.initSwiperObserver();
 }
-window.renderDay = renderDay;
 
 document.addEventListener('DOMContentLoaded', () => {
     const tabsContainer = document.getElementById('day-tabs');
@@ -1543,11 +1390,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let isFirst = true;
     for (const [dayId, data] of Object.entries(window.workoutDays)) {
         const activeClasses = isFirst ? 'text-white border-blue-500 bg-gray-800' : 'text-gray-400 border-transparent';
-        tabsHtml += `<button class="day-tab flex-1 py-3 text-sm font-semibold border-b-2 ${activeClasses} transition duration-300 hover:border-blue-500 hover:text-white hover:bg-gray-800/70" data-day="${dayId}" onclick="window.switchDay('${dayId}')">${data.name.split(':')[0]}</button>`;
+        tabsHtml += `<button class="day-tab flex-1 py-3 text-base font-semibold border-b-2 ${activeClasses} transition duration-300 hover:border-blue-500 hover:text-white hover:bg-gray-800/70" data-day="${dayId}" onclick="window.switchDay('${dayId}')">${data.name.split(':')[0]}</button>`;
         isFirst = false;
     }
     tabsContainer.innerHTML = tabsHtml;
-
     // --- NUOVA AGGIUNTA: REGISTRAZIONE SERVICE WORKER ---
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js')
@@ -1559,6 +1405,5 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
     // --- FINE AGGIUNTA ---
-
     initializeFirebase();
 });
