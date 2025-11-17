@@ -20,82 +20,6 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
 	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-    <style>
-        /* Stile di base e font Inter */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0d1117; /* Dark background */
-            color: #ffffff;
-        }
-        /* Stile per l'input focalizzato */
-        input:focus {
-            --tw-ring-color: #3b82f6;
-        }
-        /* Stile per il Modale */
-        .modal {
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-        .modal.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-        .modal-content {
-            transition: transform 0.3s ease;
-        }
-        .modal.hidden .modal-content {
-            transform: translateY(-50px);
-        }
-		/* STILI AGGIUNTIVI PER MENU LATERALE */
-        .off-canvas {
-            transform: translateX(100%);
-            transition: transform 0.3s ease-out;
-        }
-        .off-canvas.active {
-            transform: translateX(0);
-        }
-		/* NUOVI STILI PER LO SWIPE ORIZZONTALE */
-		.horizontal-snap-container {
-		    display: flex;
-		    overflow-x: auto;
-		    /* Questa è la magia: abilita lo snap orizzontale */
-		    scroll-snap-type: x mandatory; 
-		    scroll-behavior: smooth;
-		    -webkit-overflow-scrolling: touch; /* Per un feeling nativo su iOS */
-		}
-		
-		.horizontal-snap-child {
-		    flex-shrink: 0; /* Impedisce alle card di restringersi */
-		    width: 100%;
-		    scroll-snap-align: start; /* Aggancia la card all'inizio */
-		}
-		
-		/* Nasconde la scrollbar orizzontale */
-		.no-scrollbar::-webkit-scrollbar {
-		    display: none;
-		}
-		.no-scrollbar {
-		    -ms-overflow-style: none;  /* IE and Edge */
-		    scrollbar-width: none;  /* Firefox */
-		}
-		/* NUOVI STILI PER I PALLINI (DOTS) */
-		.swiper-dots {
-		    display: flex;
-		    justify-content: center;
-		    align-items: center;
-		    padding: 10px 0;
-		}
-		.swiper-dot {
-		    width: 8px; /* Pallini piccoli */
-		    height: 8px;
-		    border-radius: 50%;
-		    background-color: #4b5563; /* Grigio (inattivo) */
-		    margin: 0 4px;
-		    transition: background-color 0.3s ease;
-		}
-		.swiper-dot.active {
-		    background-color: #3b82f6; /* Blu (attivo) */
-		}
-    </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -1698,6 +1622,7 @@
 </html>
 </body>
 </html>
+
 
 
 
