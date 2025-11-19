@@ -816,6 +816,13 @@ window.updateTonnageDisplay = updateTonnageDisplay;
 function getRestTimeSeconds(restString) { /* ... codice invariato ... */
     const match = restString.match(/(\d+)/); return match ? parseInt(match[1], 10) : 0;
 }
+// --- NUOVO: Helper per estrarre i minuti dalla durata ("10 min" -> 10)
+function getDurationMinutes(repsString) {
+    if (!repsString) return 10; // Default fallback
+    const match = repsString.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 10;
+}
+window.getDurationMinutes = getDurationMinutes;
 
 function updateTimerDisplay(timerId, seconds, isGuided = false) { /* ... codice invariato ... */
     const minutes = Math.floor(seconds / 60); const secs = seconds % 60; const display = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -866,6 +873,65 @@ function startTimer(dayId, exIndex, restString, isGuided = false) { /* ... codic
     }, 1000);
     activeTimers[timerId].interval = interval; showTemporaryMessage(`Riposo di ${durationSeconds} secondi iniziato.`, 'bg-blue-600'); updateTimerDisplay(timerId, durationSeconds, isGuided);
 }
+// --- NUOVO: Funzione specifica per il timer dell'esercizio (Cardio/Tempo) ---
+function toggleExerciseTimer(dayId, exIndex) {
+    const timerId = `exercise-timer-${dayId}-${exIndex}`;
+    
+    // CASO 1: Il timer è in esecuzione -> Lo mettiamo in PAUSA
+    if (activeTimers[timerId] && activeTimers[timerId].isRunning) {
+        clearInterval(activeTimers[timerId].interval);
+        activeTimers[timerId].isRunning = false;
+        renderGuidedMode(); // Ricarichiamo la UI per mostrare il tasto "Riprendi"
+        return;
+    }
+
+    // CASO 2: Il timer è in pausa -> Lo RIPRENDIAMO
+    if (activeTimers[timerId] && !activeTimers[timerId].isRunning && activeTimers[timerId].seconds > 0) {
+        activeTimers[timerId].isRunning = true;
+        runCardioInterval(timerId, exIndex); // Funzione helper interna (vedi sotto) o logica diretta
+        renderGuidedMode();
+        return;
+    }
+
+    // CASO 3: Avvio da zero -> Leggiamo l'input dell'utente
+    const inputEl = document.getElementById(`exercise-duration-${exIndex}`);
+    const minutes = inputEl ? parseInt(inputEl.value, 10) : 10;
+    const durationSeconds = minutes * 60;
+
+    activeTimers[timerId] = { seconds: durationSeconds, isRunning: true, interval: null };
+    runCardioInterval(timerId, exIndex);
+    renderGuidedMode();
+}
+
+// Helper per evitare duplicazione codice nell'intervallo
+function runCardioInterval(timerId, exIndex) {
+    const interval = setInterval(() => {
+         if (activeTimers[timerId] && activeTimers[timerId].isRunning) {
+            activeTimers[timerId].seconds--;
+            
+            // Aggiorna solo il testo del timer senza ricaricare tutta la pagina
+            const displayEl = document.getElementById(`exercise-timer-display-${exIndex}`);
+            if (displayEl) {
+                const m = Math.floor(activeTimers[timerId].seconds / 60); 
+                const s = activeTimers[timerId].seconds % 60;
+                displayEl.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }
+
+            // Se finisce il tempo
+            if (activeTimers[timerId].seconds <= 0) { 
+                clearInterval(interval); 
+                activeTimers[timerId].isRunning = false; 
+                activeTimers[timerId].interval = null; 
+                showTemporaryMessage('Esercizio completato!', 'bg-green-600');
+                if ('vibrate' in navigator) { navigator.vibrate([500, 200, 500]); }
+                renderGuidedMode(); // Ricarica per mostrare stato finale
+            }
+         }
+    }, 1000);
+    activeTimers[timerId].interval = interval;
+}
+window.toggleExerciseTimer = toggleExerciseTimer;
+
 function startTotalTimer() { /* ... codice invariato ... */
     if (window.totalTimerInterval) { clearInterval(window.totalTimerInterval); } window.totalTimeSeconds = 0;
     const timerElement = document.getElementById('total-timer');
@@ -1308,6 +1374,13 @@ function renderGuidedMode() {
     const currentExTonnage = Math.round(window.exerciseTonnageMap[exIndex] || 0);
     const isTimerRunning = activeTimers[timerId] && activeTimers[timerId].isRunning && activeTimers[timerId].seconds > 0;
     const nextStepAction = (isTimerRunning || isTimedExercise) ? 'window.nextStep()' : `window.toggleTimer('${window.activeDay}', ${exIndex}, '${exercise.rest}', true)`;
+    // --- NUOVO: Logica per il timer Esercizio (Cardio) ---
+    const exerciseTimerId = `exercise-timer-${window.activeDay}-${exIndex}`;
+    const exerciseTimerState = activeTimers[exerciseTimerId];
+    const isExerciseRunning = exerciseTimerState && exerciseTimerState.isRunning;
+    // Se il timer esiste usiamo i suoi secondi, altrimenti calcoliamo dai minuti di default
+    const exerciseTimerRemaining = exerciseTimerState ? exerciseTimerState.seconds : (getDurationMinutes(exercise.reps) * 60);
+    // --- FINE NUOVO ---
     let html = `<div class="bg-gray-800 p-6 mb-6 rounded-xl shadow-2xl border-4 border-blue-500/50"><div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
     <h3 class="text-2xl font-extrabold text-white">${exercise.name}</h3>${!isTimedExercise ? `<span class="text-2xl font-mono font-bold text-yellow-400 p-2 bg-gray-700 rounded-lg">${window.currentSet}/${exercise.sets}</span>` : ''}</div><div class="flex flex-col md:flex-row gap-6"><div class="flex-shrink-0 w-full md:w-1/2"><img src="${getImageUrl(exercise)}" alt="Immagine di ${exercise.name}" onerror="this.onerror=null; this.src='https://placehold.co/400x200/800080/ffffff/png?text=IMMAGINE+NON+DISPONIBILE';" class="w-full h-auto object-cover rounded-lg border border-gray-600 shadow-md aspect-[4/3]">
     ${!isTimedExercise ? `<div class="mt-4 p-4 bg-gray-900 rounded-xl">
@@ -1323,7 +1396,36 @@ function renderGuidedMode() {
                 </div>
                 <button id="terminate-button-${window.activeDay}-${exIndex}" onclick="window.terminateRest('${window.activeDay}', ${exIndex})" class="hidden mt-2 px-4 py-2 bg-red-700 text-white font-semibold rounded-full hover:bg-red-800 transition duration-150 shadow-md">Termina in Anticipo</button>
             </div>`	  		
-        : `<div class="mt-4 p-4 bg-gray-700 rounded-xl text-center"><p class="text-lg font-bold text-green-400">DURATA: ${exercise.reps}</p><button onclick="window.nextStep()" class="mt-4 px-4 py-2 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition duration-150 shadow-lg">COMPLETATO (Passa al Prossimo)</button></div>`}</div><div class="flex-grow flex flex-col justify-start"><p class="text-base text-gray-300 mb-4">${isTimedExercise ? `Concentrati sul mantenimento del ritmo o dell'intensità per la durata di ${exercise.reps}.` : `Esegui la tua ${window.currentSet}a serie. Concentrati sulla forma per ${exercise.reps} ripetizioni.`}</p>
+        : `
+            <!-- NUOVA INTERFACCIA PER ESERCIZI A TEMPO (CARDIO) -->
+            <div class="mt-4 p-4 bg-gray-900 rounded-xl">
+                ${!isExerciseRunning ? `
+                    <label for="exercise-duration-${exIndex}" class="text-sm font-semibold mb-2 block text-yellow-300">Imposta Durata (minuti)</label>
+                    <div class="flex items-center gap-2 mb-4">
+                        <!-- Input modificabile per i minuti -->
+                        <input type="number" id="exercise-duration-${exIndex}" value="${getDurationMinutes(exercise.reps)}" min="1" class="w-24 p-2 text-xl text-white bg-gray-700 border border-gray-600 rounded-lg text-center focus:ring-2 focus:ring-blue-500">
+                        <button onclick="window.toggleExerciseTimer('${window.activeDay}', ${exIndex})" id="btn-exercise-timer-${exIndex}" class="flex-grow px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition duration-150 shadow-md">Avvia Timer</button>
+                    </div>
+                ` : `
+                    <div class="mb-4 text-center">
+                         <p class="text-sm text-gray-400 mb-1">Tempo Rimanente</p>
+                         <!-- Display del conto alla rovescia -->
+                         <div id="exercise-timer-display-${exIndex}" class="text-5xl font-mono font-bold text-white tracking-widest">
+                            ${String(Math.floor(exerciseTimerRemaining / 60)).padStart(2, '0')}:${String(exerciseTimerRemaining % 60).padStart(2, '0')}
+                         </div>
+                         <button onclick="window.toggleExerciseTimer('${window.activeDay}', ${exIndex})" class="mt-3 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-lg transition duration-150 w-full">Pausa / Riprendi</button>
+                    </div>
+                `}
+                
+                <!-- Il tasto per completare c'è sempre, così puoi finire prima se vuoi -->
+                <button onclick="window.nextStep()" class="w-full mt-2 px-4 py-3 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition duration-150 shadow-lg border border-green-500">
+                    COMPLETATO (Passa al Prossimo)
+                </button>
+            </div>
+            <!-- FINE NUOVA INTERFACCIA -->
+            `
+    }
+            </div><div class="flex-grow flex flex-col justify-start"><p class="text-base text-gray-300 mb-4">${isTimedExercise ? `Concentrati sul mantenimento del ritmo o dell'intensità per la durata di ${exercise.reps}.` : `Esegui la tua ${window.currentSet}a serie. Concentrati sulla forma per ${exercise.reps} ripetizioni.`}</p>
     <!-- Blocco MODIFICATO con bottone AI e Salta -->
     <div class="mb-6">
         <div class="flex flex-col sm:flex-row gap-2">
