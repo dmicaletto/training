@@ -68,7 +68,7 @@ window.workoutDays = {
 	'day_3': {
 		name: "Giorno 3: Schiena e Bicipiti",
 		exercises: [
-			{ name: "Reamtore Manubri", sets: 4, reps: "8-10 (per braccio)", rest: "90s", defaultWeight: 50, imageUrl: './images/lat-machine.png?text=LAT+MACHINE', notes: "Tira con i gomiti, non con i bicipiti. Schiena dritta." },
+			{ name: "Rematore Manubri", sets: 4, reps: "8-10 (per braccio)", rest: "90s", defaultWeight: 50, imageUrl: './images/lat-machine.png?text=LAT+MACHINE', notes: "Tira con i gomiti, non con i bicipiti. Schiena dritta." },
 			{ name: "Lat Machine", sets: 4, reps: "8-10", rest: "90s", defaultWeight: 50, imageUrl: './images/lat-machine.png?text=LAT+MACHINE', notes: "Tira con i gomiti, non con i bicipiti. Schiena dritta." },
 			{ name: "Pulley basso con Triangolo", sets: 3, reps: "10-12", rest: "60s", defaultWeight: 20, imageUrl: './images/pulley-basso.png?text=REMATORE', notes: "Petto in fuori, schiena inarcata. Porta il triangolo all'ombelico." },
 			{ name: "Row Machine", sets: 3, reps: "10-12", rest: "60s", defaultWeight: 20, imageUrl: './images/pulley-basso.png?text=REMATORE', notes: "Petto in fuori, schiena inarcata. Porta il triangolo all'ombelico." },
