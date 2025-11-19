@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 // AGGIORNATO: Aggiunte getDocs, query, orderBy
-import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, query, orderBy, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, query, orderBy, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; 
 import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -623,6 +623,9 @@ async function initializeFirebase() {
                     // 3. Se autenticato E persistenza attiva, avvia l'ascolto in background.
                     if (window.userId && window.isPersistenceEnabled) {
                          startDataListener(window.activeDay); 
+                        // --- NUOVA AGGIUNTA ---
+                         checkAndRestoreSession(); // Controlla se c'era un allenamento in corso
+                         // ----------------------
                     }
                 }).catch(err => {
                      // Fallback se loadUserProfile fallisce, forziamo il rendering
@@ -705,6 +708,7 @@ async function saveWeight(dayId, exIndex, setIndex, weight) { /* ... codice inva
         };
         await setDoc(docRef, dataToSave, { merge: false });
         showTemporaryMessage('Peso salvato con successo!', 'bg-green-600');
+        saveActiveSession(); // Salva il tonnellaggio aggiornato e il peso inserito
     } catch (error) { console.error("Errore nel salvataggio del peso:", error); showTemporaryMessage(`Errore di salvataggio: ${error.message}`, 'bg-red-500'); }
 }
 window.saveWeight = saveWeight;
@@ -726,6 +730,7 @@ async function saveNote(dayId, exIndex, note) { /* ... codice invariato ... */
         };
         await setDoc(docRef, dataToSave, { merge: false });
         showTemporaryMessage('Nota salvata con successo!', 'bg-green-600');
+        saveActiveSession();
     } catch (error) { console.error("Errore nel salvataggio della nota:", error); showTemporaryMessage(`Errore di salvataggio nota: ${error.message}`, 'bg-red-500'); }
 }
 window.saveNote = saveNote;
@@ -919,13 +924,32 @@ function toggleTimer(dayId, exIndex, restString, isGuided = false) { /* ... codi
     }
 }
 window.toggleTimer = toggleTimer;
-function startGuidedMode() { /* ... codice invariato ... */
-    window.isGuidedMode = true; window.currentExIndex = 0; window.currentSet = 1; window.totalTonnage = 0; window.exerciseTonnageMap = {}; 
-    window.totalCalories = 0; // NUOVO: Reset Calorie Totali
+function startGuidedMode(isResuming = false) {
+    window.isGuidedMode = true;
+    
+    if (!isResuming) {
+        // Se NON stiamo riprendendo, azzera tutto come al solito
+        window.currentExIndex = 0; 
+        window.currentSet = 1; 
+        window.totalTonnage = 0; 
+        window.exerciseTonnageMap = {}; 
+        window.totalCalories = 0;
+        window.totalTimeSeconds = 0;
+    }
+    
+    // Avvia interfaccia
     startTotalTimer();
-    document.getElementById('day-tabs').classList.add('hidden'); document.getElementById('mode-toggle-button').classList.add('hidden');
-    document.getElementById('guided-controls-container').classList.remove('hidden'); updateTonnageDisplay(); renderGuidedMode();
-    showTemporaryMessage('Modalità Guidata avviata. Inizia il tuo allenamento!', 'bg-blue-600');
+    document.getElementById('day-tabs').classList.add('hidden'); 
+    document.getElementById('mode-toggle-button').classList.add('hidden');
+    document.getElementById('guided-controls-container').classList.remove('hidden'); 
+    
+    updateTonnageDisplay(); 
+    renderGuidedMode();
+    
+    if (!isResuming) {
+        showTemporaryMessage('Modalità Guidata avviata. Inizia il tuo allenamento!', 'bg-blue-600');
+        saveActiveSession(); // Salva subito lo stato iniziale
+    }
 }
 window.startGuidedMode = startGuidedMode;
 /**
@@ -982,6 +1006,7 @@ window.stopGuidedMode = stopGuidedMode;
  * Pulisce e resetta la UI alla fine della modalità guidata.
  */
 function __internal_cleanup_guided_mode() {
+    clearActiveSession(); // Rimuove il salvataggio temporaneo
     // 5. Azzera tutte le variabili globali
     window.isGuidedMode = false; 
     window.currentExIndex = 0; 
@@ -1041,6 +1066,7 @@ function skipExercise() {
 
     // 5. Ricarica la vista guidata (mostrerà il nuovo es. all'indice corrente)
     renderGuidedMode();
+    saveActiveSession(); // Salva il nuovo ordine degli esercizi
 }
 window.skipExercise = skipExercise;
 /**
@@ -1212,11 +1238,16 @@ function nextStep() {
     }
     const timerId = `timer-display-${window.activeDay}-${window.currentExIndex}`; if (activeTimers[timerId] && activeTimers[timerId].interval) { clearInterval(activeTimers[timerId].interval); } activeTimers[timerId] = null;
     if (!isTimedExercise && window.currentSet < currentExercise.sets) {
-        window.currentSet++; showTemporaryMessage(`Prossima serie: ${window.currentSet} di ${currentExercise.sets}. Inizia la tua serie.`, 'bg-blue-600'); renderGuidedMode(); return;
+        window.currentSet++; 
+        saveActiveSession();
+        showTemporaryMessage(`Prossima serie: ${window.currentSet} di ${currentExercise.sets}. Inizia la tua serie.`, 'bg-blue-600'); renderGuidedMode(); return;
     }
     const nextExIndex = window.currentExIndex + 1;
     if (nextExIndex < dayData.exercises.length) {
-        window.currentExIndex = nextExIndex; window.currentSet = 1; showTemporaryMessage(`Esercizio successivo: ${dayData.exercises[nextExIndex].name}.`, 'bg-green-600'); renderGuidedMode(); return;
+        window.currentExIndex = nextExIndex; 
+        window.currentSet = 1; 
+        saveActiveSession();
+        showTemporaryMessage(`Esercizio successivo: ${dayData.exercises[nextExIndex].name}.`, 'bg-green-600'); renderGuidedMode(); return;
     }
     stopTotalTimer(); 
     // NUOVO: Calcola le calorie stimate totali con aggiustamento peso
@@ -1407,3 +1438,82 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FINE AGGIUNTA ---
     initializeFirebase();
 });
+
+// --- GESTIONE SESSIONE ATTIVA (PERSISTENZA TEMPORANEA) ---
+
+/**
+ * Salva lo stato corrente dell'allenamento in un documento dedicato.
+ * Viene chiamato ogni volta che lo stato cambia (nextStep, saveWeight, ecc.)
+ */
+async function saveActiveSession() {
+    if (!window.userId || !window.isGuidedMode || !window.isPersistenceEnabled) return;
+
+    try {
+        const docRef = doc(window.db, `artifacts/${window.appId}/users/${window.userId}/active_session`, 'current');
+        
+        const sessionData = {
+            dayId: window.activeDay,
+            // Salviamo l'intera struttura del giorno perché l'ordine degli esercizi potrebbe essere cambiato (skipExercise)
+            dayData: window.workoutDays[window.activeDay],
+            currentExIndex: window.currentExIndex,
+            currentSet: window.currentSet,
+            totalTonnage: window.totalTonnage,
+            totalTimeSeconds: window.totalTimeSeconds,
+            exerciseTonnageMap: window.exerciseTonnageMap,
+            timestamp: new Date().toISOString()
+        };
+
+        // Salvataggio "fire and forget" (non aspettiamo l'await per non bloccare la UI)
+        setDoc(docRef, sessionData).catch(e => console.error("Errore salvataggio sessione background:", e));
+        
+    } catch (error) {
+        console.error("Errore nella preparazione del salvataggio sessione:", error);
+    }
+}
+
+/**
+ * Cancella la sessione attiva (quando l'allenamento è finito o interrotto volontariamente).
+ */
+async function clearActiveSession() {
+    if (!window.userId || !window.isPersistenceEnabled) return;
+    const docRef = doc(window.db, `artifacts/${window.appId}/users/${window.userId}/active_session`, 'current');
+    try {
+        await deleteDoc(docRef);
+    } catch (e) {
+        console.error("Errore cancellazione sessione:", e);
+    }
+}
+
+/**
+ * Controlla se esiste una sessione interrotta e la ripristina.
+ */
+async function checkAndRestoreSession() {
+    if (!window.userId || !window.isPersistenceEnabled) return;
+    
+    const docRef = doc(window.db, `artifacts/${window.appId}/users/${window.userId}/active_session`, 'current');
+    try {
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            
+            // Chiediamo conferma? Per ora facciamo ripristino automatico per semplicità e immediatezza
+            console.log("Trovata sessione attiva, ripristino in corso...");
+            
+            // 1. Ripristina variabili
+            window.activeDay = data.dayId;
+            window.workoutDays[data.dayId] = data.dayData; // Ripristina ordine esercizi e note/pesi
+            window.currentExIndex = data.currentExIndex;
+            window.currentSet = data.currentSet;
+            window.totalTonnage = data.totalTonnage;
+            window.totalTimeSeconds = data.totalTimeSeconds;
+            window.exerciseTonnageMap = data.exerciseTonnageMap || {};
+            
+            // 2. Avvia modalità guidata (in modalità "resume")
+            startGuidedMode(true); 
+            
+            showTemporaryMessage('Sessione precedente recuperata!', 'bg-blue-600');
+        }
+    } catch (error) {
+        console.error("Errore nel ripristino della sessione:", error);
+    }
+}
