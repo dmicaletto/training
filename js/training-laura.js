@@ -750,7 +750,7 @@ function showTemporaryMessage(message, colorClass) { /* ... codice invariato ...
 }
 
 async function generateExerciseTip(exerciseName, exerciseElement) { /* ... codice invariato ... */
-    const apiKey = "AIzaSyDnrW-1uba9UTTyKJoGctm8eW8F5lSXmtE";
+    const apiKey = "AIzaSyBg84QWWJvF1lKhz3MYDzC3NqpEmETD4QQ";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
     const button = document.getElementById(`tip-btn-${exerciseElement.id.replace('tip-output-', '')}`);
     if (button) button.disabled = true;
