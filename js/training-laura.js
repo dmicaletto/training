@@ -46,7 +46,7 @@ window.workoutDays = {
             { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO', notes: "Mantieni un ritmo moderato che ti consenta di parlare." },
             { name: "Chest Press distensioni delle braccia", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 20, imageUrl: './images/chestpress.png?text=CHEST+PRESS', notes: "Spingi i gomiti in avanti. Contrai il petto al massimo accorciamento." },
             { name: "Pectoral Machine Adduzioni delle braccia", sets: 3, reps: "10-12", rest: "90s", defaultWeight: 20, imageUrl: './images/pectoral.png?text=PECTORAL+FLY', notes: "Mantieni le spalle basse e concentratevi solo sulla contrazione del petto." },
-            { name: "French Press (Manubri)", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 6, imageUrl: './images/french-press.png?text=PECTORAL+FLY?text=FRENCH+PRESS', notes: "Movimento controllato, senti l'allungamento. Usa un peso moderato." },
+            { name: "French Press (Manubri)", sets: 3, reps: "8-12 (x braccio)", rest: "90s", defaultWeight: 6, imageUrl: './images/french-press.png?text=PECTORAL+FLY?text=FRENCH+PRESS', notes: "Movimento controllato, senti l'allungamento. Usa un peso moderato." },
             { name: "Spinte in Basso (Pushdown)", sets: 3, reps: "10-15", rest: "60s", defaultWeight: 10, imageUrl: './images/pushdown.png?text=TRICIPITI+PUSH', notes: "Porta il cavo fino in fondo. Contrai il tricipite alla massima estensione." },
             { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/lombari.jpg?text=LOMBARI', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
             { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/crunch.jpg?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
@@ -58,7 +58,7 @@ window.workoutDays = {
             { name: "Cardio Stepper", sets: 0, reps: "10 min", rest: "N/A", defaultWeight: 0, imageUrl: './images/stepper.jpg?text=CARDIO', notes: "Mantieni un ritmo moderato che ti consenta di parlare." },
             { name: "Lat Machine", sets: 4, reps: "8-10", rest: "90s", defaultWeight: 50, imageUrl: './images/lat-machine.png?text=LAT+MACHINE', notes: "Tira con i gomiti, non con i bicipiti. Schiena dritta." },
             { name: "Pulley basso con Triangolo", sets: 3, reps: "10-12 (per braccio)", rest: "60s", defaultWeight: 20, imageUrl: './images/pulley-basso.png?text=REMATORE', notes: "Petto in fuori, schiena inarcata. Porta il triangolo all'ombelico." },
-            { name: "Curl seduto con Manubri", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 25, imageUrl: './images/curl-manubri-seduto-bg.png?text=CURL+BILANCIERE', notes: "Ruota il polso (supinazione) durante la salita. Non oscillare." },
+            { name: "Curl seduto con Manubri", sets: 3, reps: "8-12 (x braccio)", rest: "90s", defaultWeight: 25, imageUrl: './images/curl-manubri-seduto-bg.png?text=CURL+BILANCIERE', notes: "Ruota il polso (supinazione) durante la salita. Non oscillare." },
             { name: "Curl a Martello ai Cavi", sets: 3, reps: "10-15", rest: "60s", defaultWeight: 10, imageUrl: './images/hammer-curl.png?text=CURL+HAMMER', notes: "Focus sull'avambraccio. Presa neutra e stretta." },
             { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/lombari.jpg?text=LOMBARI', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
             { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/crunch.jpg?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
@@ -72,8 +72,8 @@ window.workoutDays = {
             { name: "Leg Extension", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: './images/legext.png?text=LEG+EXT', notes: "Contrai il quadricipite per un secondo al massimo accorciamento." },
             { name: "Leg Curl Sdraiato", sets: 3, reps: "10-15", rest: "90s", defaultWeight: 120, imageUrl: './images/leg-curl-sdraiato-bg.png?text=LEG+CURL', notes: "Focus sui femorali. Movimento lento in fase negativa." },
             { name: "Adduzioni", sets: 3, reps: "8-12", rest: "90s", defaultWeight: 15, imageUrl: './images/adductor.png?text=ADDUCTOR', notes: "Siediti in modo da isolare solo gli adduttori. Controlla il ritorno." },
-            { name: "Alzate Laterali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: './images/alzate-laterali.png?text=ALZATE+LATERALI', notes: "Gomiti leggermente flessi. Porta i manubri all'altezza delle spalle, non più su." },
-            { name: "Alzate Frontali", sets: 3, reps: "12", rest: "60s", defaultWeight: 8, imageUrl: './images/alzate-frontali.png?text=ALZATE+FRONTALI', notes: "Solleva alternando le braccia o entrambe insieme. Movimento controllato." },
+            { name: "Alzate Laterali", sets: 3, reps: "12 (x braccio)", rest: "60s", defaultWeight: 8, imageUrl: './images/alzate-laterali.png?text=ALZATE+LATERALI', notes: "Gomiti leggermente flessi. Porta i manubri all'altezza delle spalle, non più su." },
+            { name: "Alzate Frontali", sets: 3, reps: "12 (x braccio)", rest: "60s", defaultWeight: 8, imageUrl: './images/alzate-frontali.png?text=ALZATE+FRONTALI', notes: "Solleva alternando le braccia o entrambe insieme. Movimento controllato." },
             { name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/lombari.jpg?text=LOMBARI', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
             { name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/crunch.jpg?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
         ]
@@ -788,16 +788,37 @@ async function generateExerciseTip(exerciseName, exerciseElement) { /* ... codic
 }
 window.generateExerciseTip = generateExerciseTip;
 
-function getImageUrl(exercise) { /* ... codice invariato ... */ return exercise.imageUrl || `https://placehold.co/400x200/800080/ffffff/png?text=IMMAGINE+PER+${encodeURIComponent(exercise.name.toUpperCase().replace(/\s/g, '+'))}`; }
-function calculateTonnageForSet(repsString, weight) { /* ... codice invariato ... */
-    const w = parseFloat(weight); if (isNaN(w) || w === null || w <= 0) { return 0; }
-    let repsMatch = repsString.match(/(\d+)/); let reps = repsMatch ? parseInt(repsMatch[1], 10) : 1; 
-    if (repsString.includes('-') && repsMatch) { const parts = repsString.split('-').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n)); if (parts.length === 2) { reps = Math.floor((parts[0] + parts[1]) / 2); } }
-    return 1 * reps * w;
+function getImageUrl(exercise) { 
+    return exercise.imageUrl || `https://placehold.co/400x200/800080/ffffff/png?text=IMMAGINE+PER+${encodeURIComponent(exercise.name.toUpperCase().replace(/\s/g, '+'))}`; 
+}
+function calculateTonnageForSet(repsString, weight) {
+    const w = parseFloat(weight);
+    if (isNaN(w) || w === null || w <= 0) { return 0; }
+
+    // 1. Parsing Ripetizioni (estrae i numeri)
+    let repsMatch = repsString.match(/(\d+)/);
+    let reps = repsMatch ? parseInt(repsMatch[1], 10) : 1;
+
+    // Gestione range (es. "8-12" diventa 10)
+    if (repsString.includes('-') && repsMatch) {
+        const parts = repsString.split('-').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+        if (parts.length === 2) {
+            reps = Math.floor((parts[0] + parts[1]) / 2);
+        }
+    }
+
+    // 2. Controllo Moltiplicatore "Per Braccio"
+    // Cerca stringhe come "(x braccio)" o "(per braccio)" o "(x lato)"
+    // La 'i' finale rende la ricerca insensibile alle maiuscole/minuscole
+    const isPerArm = /x\s*braccio|per\s*braccio|x\s*lato|per\s*lato/i.test(repsString);
+    
+    // Se è per braccio, moltiplichiamo il peso per 2 (destro + sinistro)
+    const multiplier = isPerArm ? 2 : 1;
+    return reps * w * multiplier;
 }
 window.calculateTonnageForSet = calculateTonnageForSet;
 
-function calculateTotalTonnageForDay(dayId) { /* ... codice invariato ... */
+function calculateTotalTonnageForDay(dayId) { 
     window.totalTonnage = 0; const currentDay = window.workoutDays[dayId]; if (!currentDay) return;
     currentDay.exercises.forEach(ex => {
         if (ex.logged_weights) {
