@@ -589,7 +589,7 @@ const MANUAL_FIREBASE_CONFIG = {
 async function initializeFirebase() {
 	let firebaseConfig;
 	let initialAuthToken = null;
-	let appId = 'default-app-id';
+	let appId = 'training-davide-app-id';
 	let persistenceAttempted = true;
 
 	try {
@@ -643,7 +643,7 @@ async function initializeFirebase() {
 		// Listener per l'autenticazione
 		onAuthStateChanged(window.auth, (user) => {
 			if (user) {
-				window.userId = user.uid;
+				window.userId = getStableUserId(user);
 				document.getElementById('user-id').textContent = `ID Utente: ${user.uid}`;
 				
 				// 1. Carica il Profilo in modo sicuro
@@ -686,7 +686,15 @@ async function initializeFirebase() {
 		renderDay(window.activeDay);
 	}
 }
-
+// --- FUNZIONE ID STABILE ---
+function getStableUserId(firebaseUser) {
+	const STORAGE_KEY = 'training_user_id_v1';
+	let stored = localStorage.getItem(STORAGE_KEY);
+	if (stored) return stored;
+	stored = firebaseUser.uid;
+	localStorage.setItem(STORAGE_KEY, stored);
+	return stored;
+}
 // --- GESTIONE DATI FIRESTORE (Omesso per brevità, codice invariato) ---
 // (codice di startDataListener, saveWeight, saveNote, ecc. qui)
 
