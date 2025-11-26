@@ -959,16 +959,46 @@ function startTimer(dayId, exIndex, restString, isGuided = false) { /* ... codic
 	}, 1000);
 	activeTimers[timerId].interval = interval; showTemporaryMessage(`Riposo di ${durationSeconds} secondi iniziato.`, 'bg-blue-600'); updateTimerDisplay(timerId, durationSeconds, isGuided);
 }
-function startTotalTimer() { /* ... codice invariato ... */
-	if (window.totalTimerInterval) { clearInterval(window.totalTimerInterval); } window.totalTimeSeconds = 0;
-	const timerElement = document.getElementById('total-timer');
-	if (timerElement) { timerElement.classList.remove('hidden', 'font-extrabold', 'text-xl'); timerElement.classList.add('text-lg'); timerElement.textContent = 'Durata totale: 00:00:00'; }
-	window.totalTimerInterval = setInterval(() => {
-		window.totalTimeSeconds++;
-		const hours = Math.floor(window.totalTimeSeconds / 3600); const minutes = Math.floor((window.totalTimeSeconds % 3600) / 60); const seconds = window.totalTimeSeconds % 60;
-		const display = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-		if (timerElement) { timerElement.textContent = `Durata totale: ${display}`; }
-	}, 1000);
+function startTotalTimer() {
+    if (window.totalTimerInterval) { clearInterval(window.totalTimerInterval); }
+    const timerElement = document.getElementById('total-timer');
+    if (timerElement) { 
+        timerElement.classList.remove('hidden', 'font-extrabold', 'text-xl'); 
+        timerElement.classList.add('text-lg'); 
+        // Se stiamo riprendendo, mostra subito il tempo corrente invece di aspettare 1 secondo
+        updateTimerUI(timerElement);
+    }
+
+    // Memorizziamo l'istante preciso dell'ultimo "tick"
+    let lastTickTime = Date.now();
+
+    window.totalTimerInterval = setInterval(() => {
+        const now = Date.now();
+        const deltaMillis = now - lastTickTime;
+
+        // Se è passato almeno 1 secondo (1000ms)
+        if (deltaMillis >= 1000) {
+            // Calcoliamo quanti secondi sono passati realmente (es. se il telefono ha dormito per 5 minuti, delta sarà 300.000)
+            const secondsPassed = Math.floor(deltaMillis / 1000);
+            
+            window.totalTimeSeconds += secondsPassed;
+            
+            // Aggiorniamo il riferimento temporale sottraendo l'eccesso per mantenere precisione
+            lastTickTime = now - (deltaMillis % 1000);
+
+            updateTimerUI(timerElement);
+        }
+    }, 1000);
+}
+
+// Funzione helper per aggiornare il testo (per non duplicare codice)
+function updateTimerUI(element) {
+    if (!element) return;
+    const hours = Math.floor(window.totalTimeSeconds / 3600); 
+    const minutes = Math.floor((window.totalTimeSeconds % 3600) / 60); 
+    const seconds = window.totalTimeSeconds % 60;
+    const display = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    element.textContent = `Durata totale: ${display}`;
 }
 function stopTotalTimer() { /* ... codice invariato ... */
 	if (window.totalTimerInterval) { clearInterval(window.totalTimerInterval); window.totalTimerInterval = null; }
@@ -977,29 +1007,32 @@ function stopTotalTimer() { /* ... codice invariato ... */
 	if (timerElement) { timerElement.textContent = `Durata finale: ${finalTime}`; timerElement.classList.remove('text-lg'); timerElement.classList.add('font-extrabold', 'text-xl'); }
 }
 /**
- * Stima le calorie bruciate per l'allenamento con i pesi, aggiustata al peso corporeo.
+ * NUOVA FORMULA (Basata su METs + Tonnellaggio):
+ * Stima basata sulla durata (fattore principale) + un bonus per il volume spostato.
  * @param {number} totalTonnage - Tonnellaggio totale in kg.
- * @param {number} bodyWeight - Peso corporeo dell'utente in kg (da window.userProfile).
- * @returns {number} Calorie stimate.
+ * @param {number} bodyWeight - Peso corporeo dell'utente in kg.
+ * @param {number} durationSeconds - Durata allenamento in secondi.
  */
-function estimateWeightCalories(totalTonnage, bodyWeight) {
-	if (totalTonnage <= 0 || bodyWeight <= 0) return 0;
-	
-	// Fattore Base di Conversione Calorie per Tonnellata
-	// Usiamo 3.5 Calorie / tonnellata come punto di partenza.
-	const CAL_PER_TON_BASE = 3.5; 
-	const REFERENCE_WEIGHT = 70; // Peso di riferimento standard (70 kg)
+function estimateWeightCalories(totalTonnage, bodyWeight, durationSeconds) {
+    if (bodyWeight <= 0 || durationSeconds <= 0) return 0;
+    
+    // 1. Calcolo base MET (Metabolic Equivalent of Task)
+    // Weight lifting vigoroso è circa 6.0, moderato è 3.5-4.0.
+    // Usiamo 4.5 come media realistica (considerando le pause).
+    const MET = 4.5; 
+    const durationHours = durationSeconds / 3600;
+    
+    // Formula standard: Kcal = MET * Kg * Ore
+    let timeBasedCalories = MET * bodyWeight * durationHours;
 
-	// Aggiustamento: Il fattore viene scalato in base al peso dell'utente rispetto al peso di riferimento.
-	const adjustedFactor = CAL_PER_TON_BASE * (bodyWeight / REFERENCE_WEIGHT);
-	
-	const tonnageInTons = totalTonnage / 1000;
-	
-	// Calcolo: Tonnellate * Fattore Aggiustato
-	let estimatedCalories = tonnageInTons * adjustedFactor;
-	
-	// Arrotonda a 1 decimale
-	return Math.round(estimatedCalories * 10) / 10;
+    // 2. Bonus Tonnellaggio (Piccolo extra per premiare il volume)
+    // Stima: circa 0.5 kcal extra ogni 1000kg spostati (oltre al metabolismo basale)
+    const volumeBonus = (totalTonnage / 1000) * 0.5;
+    
+    const totalCalories = timeBasedCalories + volumeBonus;
+
+    // Arrotonda all'intero
+    return Math.round(totalCalories);
 }
 window.estimateWeightCalories = estimateWeightCalories;
 function terminateRest(dayId, exIndex) { /* ... codice invariato ... */
@@ -1056,9 +1089,9 @@ function stopGuidedMode() {
 	const dayData = window.workoutDays[window.activeDay];
 	const dayName = dayData ? dayData.name : "Allenamento";
 
-	// 3. Calcola le calorie parziali
-	const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 70;
-	window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight);
+	// 3. Calcola le calorie (passiamo anche totalTimeSeconds)
+    const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 70;
+    window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight, window.totalTimeSeconds);
 
 	// 4. Mostra la schermata di riepilogo e valutazione
 	// (Questo codice è copiato da nextStep, ma con titolo diverso)
@@ -1344,10 +1377,10 @@ function nextStep() {
 		showTemporaryMessage(`Esercizio successivo: ${dayData.exercises[nextExIndex].name}.`, 'bg-green-600'); renderGuidedMode(); return;
 	}
 	stopTotalTimer(); 
-	// NUOVO: Calcola le calorie stimate totali con aggiustamento peso
-	// Utilizza window.userProfile.weight, con fallback a 70 kg se non definito
-	const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 50;
-	window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight);
+    // NUOVO: Calcola le calorie stimate totali (MET + Volume)
+    const currentWeight = window.userProfile.weight > 0 ? window.userProfile.weight : 70;
+    // Aggiunto terzo parametro window.totalTimeSeconds
+    window.totalCalories = estimateWeightCalories(window.totalTonnage, currentWeight, window.totalTimeSeconds);
 	// *** NUOVA CHIAMATA PER LOGGARE L'ALLENAMENTO ***
 	//logWorkoutHistory(dayData.name); 
 	// ***********************************************
