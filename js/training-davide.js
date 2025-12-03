@@ -1510,21 +1510,12 @@ function renderGuidedMode() {
 			<label for="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="text-sm font-semibold mb-2 block text-yellow-300">Peso per Serie ${window.currentSet} (Reps: ${exercise.reps})</label>
 			<input type="number" step="0.5" value="${currentWeight}" onchange="window.saveWeight('${window.activeDay}', ${exIndex}, ${window.currentSet - 1}, this.value)" id="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="w-full p-3 text-2xl text-white bg-gray-700 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-center" placeholder="Peso (kg)">
 				<p class="text-sm text-gray-400 mt-2 text-center">Tonnellaggio attuale esercizio: <span class="text-green-400 font-bold">${currentExTonnage.toLocaleString('it-IT')} kg</span></p>
-				<!-- NUOVO BOTTONE COMPATTO RECUPERO -->
+				<!-- BOTTONE COMPATTO RECUPERO -->
                 <button onclick="window.openRestModal('${exercise.rest}')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition duration-150 flex justify-center items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     Recupero: ${exercise.rest}
                 </button>
-				</div>
-			<!-- Blocco Timer Spostato e Ristilizzato -->
-			<div class="mt-4 p-4 bg-gray-900 rounded-xl"> 
-				<p class="text-sm text-gray-400 mb-2">Recupero Previsto: <span class="text-yellow-300 font-semibold">${exercise.rest}</span></p>
-				<div class="mt-2 flex items-center gap-3">
-					<button id="timer-button-${window.activeDay}-${exIndex}" onclick="window.toggleTimer('${window.activeDay}', ${exIndex}, '${exercise.rest}', true)" class="px-4 py-3 bg-indigo-600 text-white font-bold rounded-full hover:bg-indigo-700 transition duration-150 shadow-lg flex-grow disabled:opacity-50">Avvia Riposo</button>
-					<span id="${timerId}" class="text-4xl font-mono tracking-wider text-white flex-shrink-0 min-w-[90px] text-right">${String(Math.floor(restSeconds / 60)).padStart(2, '0')}:${String(restSeconds % 60).padStart(2, '0')}</span>
-				</div>
-				<button id="terminate-button-${window.activeDay}-${exIndex}" onclick="window.terminateRest('${window.activeDay}', ${exIndex})" class="hidden mt-2 px-4 py-2 bg-red-700 text-white font-semibold rounded-full hover:bg-red-800 transition duration-150 shadow-md">Termina in Anticipo</button>
-			</div>`	  		
+				</div>`	  		
 		: `<div class="mt-4 p-4 bg-gray-700 rounded-xl text-center"><p class="text-lg font-bold text-green-400">DURATA: ${exercise.reps}</p><button onclick="window.nextStep()" class="mt-4 px-4 py-2 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition duration-150 shadow-lg">COMPLETATO (Passa al Prossimo)</button></div>`}</div><div class="flex-grow flex flex-col justify-start"><p class="text-base text-gray-300 mb-4">${isTimedExercise ? `Concentrati sul mantenimento del ritmo o dell'intensità per la durata di ${exercise.reps}.` : `Esegui la tua ${window.currentSet}a serie. Concentrati sulla forma per ${exercise.reps} ripetizioni.`}</p>
 	<!-- Blocco MODIFICATO con bottone AI e Salta -->
 	<div class="mb-6">
