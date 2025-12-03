@@ -1506,16 +1506,16 @@ function renderGuidedMode() {
 	const nextStepAction = (isTimerRunning || isTimedExercise) ? 'window.nextStep()' : `window.toggleTimer('${window.activeDay}', ${exIndex}, '${exercise.rest}', true)`;
 	let html = `<div class="bg-gray-800 p-6 mb-6 rounded-xl shadow-2xl border-4 border-blue-500/50"><div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
 	<h3 class="text-2xl font-extrabold text-white">${exercise.name}</h3>${!isTimedExercise ? `<span class="text-2xl font-mono font-bold text-yellow-400 p-2 bg-gray-700 rounded-lg">${window.currentSet}/${exercise.sets}</span>` : ''}</div><div class="flex flex-col md:flex-row gap-6"><div class="flex-shrink-0 w-full md:w-1/2"><img src="${getImageUrl(exercise)}" alt="Immagine di ${exercise.name}" onerror="this.onerror=null; this.src='https://placehold.co/400x200/800080/ffffff/png?text=IMMAGINE+NON+DISPONIBILE';" class="w-full h-auto object-cover rounded-lg border border-gray-600 shadow-md aspect-[4/3]">
-	${!isTimedExercise ? `<div class="mt-4 p-4 bg-gray-900 rounded-xl">
+	${!isTimedExercise ? 
+	  `<div class="mt-4 p-4 bg-gray-900 rounded-xl">
 			<label for="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="text-sm font-semibold mb-2 block text-yellow-300">Peso per Serie ${window.currentSet} (Reps: ${exercise.reps})</label>
 			<input type="number" step="0.5" value="${currentWeight}" onchange="window.saveWeight('${window.activeDay}', ${exIndex}, ${window.currentSet - 1}, this.value)" id="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="w-full p-3 text-2xl text-white bg-gray-700 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-center" placeholder="Peso (kg)">
-				<p class="text-sm text-gray-400 mt-2 text-center">Tonnellaggio attuale esercizio: <span class="text-green-400 font-bold">${currentExTonnage.toLocaleString('it-IT')} kg</span></p>
-				<!-- BOTTONE COMPATTO RECUPERO -->
-                <button onclick="window.openRestModal('${exercise.rest}')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition duration-150 flex justify-center items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    Recupero: ${exercise.rest}
-                </button>
-				</div>`	  		
+			<!-- BOTTONE COMPATTO RECUPERO -->
+			<button onclick="window.openRestModal('${exercise.rest}')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition duration-150 flex justify-center items-center gap-2">
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+				Recupero: ${exercise.rest}
+			</button>
+		</div>`	  		
 		: `<div class="mt-4 p-4 bg-gray-700 rounded-xl text-center"><p class="text-lg font-bold text-green-400">DURATA: ${exercise.reps}</p><button onclick="window.nextStep()" class="mt-4 px-4 py-2 bg-green-600 text-white font-semibold rounded-full hover:bg-green-700 transition duration-150 shadow-lg">COMPLETATO (Passa al Prossimo)</button></div>`}</div><div class="flex-grow flex flex-col justify-start"><p class="text-base text-gray-300 mb-4">${isTimedExercise ? `Concentrati sul mantenimento del ritmo o dell'intensità per la durata di ${exercise.reps}.` : `Esegui la tua ${window.currentSet}a serie. Concentrati sulla forma per ${exercise.reps} ripetizioni.`}</p>
 	<!-- Blocco MODIFICATO con bottone AI e Salta -->
 	<div class="mb-6">
