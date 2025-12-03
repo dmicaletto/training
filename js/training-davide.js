@@ -1505,6 +1505,7 @@ function renderDay(dayId) {
 				<div class="flex-grow flex flex-col justify-center">
 					<div>
 						<h3 class="text-2xl font-bold mb-1 text-white">${exercise.name}</h3>
+						<p class="text-sm text-gray-400">Numero Serie: <span class="text-blue-300 font-semibold">${exercise.sets}</span></p>
 						<p class="text-sm text-gray-400">Ripetizioni/Durata: <span class="text-blue-300 font-semibold">${exercise.reps}</span></p>
 					</div>
 					${!isTimedExercise ? `<div class="mt-4"><p class="text-sm text-gray-400">Recupero Previsto: <span class="text-yellow-300 font-semibold">${exercise.rest}</span></p></div>` : `<p class="text-sm text-gray-400 mt-2 p-3 bg-gray-700 rounded-lg">Modalità: <span class="text-green-400 font-bold">Continuo / Durata (Non a Serie)</span></p>`}
