@@ -1027,7 +1027,7 @@ function finishRestAndNext() {
     // 3. Passa al prossimo step
     nextStep();
 }
-window.finishRestAndNext = finishRestAnd;
+window.finishRestAndNext = finishRestAndNext;
 
 function startTotalTimer() {
     if (window.totalTimerInterval) { clearInterval(window.totalTimerInterval); }
