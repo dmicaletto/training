@@ -947,7 +947,7 @@ function updateTimerDisplay(timerId, seconds, isGuided = false) { /* ... codice 
 	}
 }
 let activeTimers = {}; let isRestPeriodActive = false;
-function startTimer(dayId, exIndex, restString, isGuided = false) { /* ... codice invariato ... */
+function startTimer(dayId, exIndex, restString, isGuided = false) { 
 	const timerId = `timer-display-${dayId}-${exIndex}`; const durationSeconds = getRestTimeSeconds(restString);
 	if (durationSeconds <= 0) { if (isGuided) { nextStep(); } else { showTemporaryMessage(`Nessun tempo di riposo specificato per questo esercizio.`, 'bg-red-500'); } return; }
 	if (activeTimers[timerId] && activeTimers[timerId].interval) { clearInterval(activeTimers[timerId].interval); }
@@ -959,6 +959,76 @@ function startTimer(dayId, exIndex, restString, isGuided = false) { /* ... codic
 	}, 1000);
 	activeTimers[timerId].interval = interval; showTemporaryMessage(`Riposo di ${durationSeconds} secondi iniziato.`, 'bg-blue-600'); updateTimerDisplay(timerId, durationSeconds, isGuided);
 }
+// --- NUOVO: Gestione Modale Riposo ---
+let restModalInterval = null;
+
+function openRestModal(durationString) {
+    const seconds = getRestTimeSeconds(durationString);
+    if (seconds <= 0) {
+        // Se non c'è riposo, passa subito avanti
+        nextStep();
+        return;
+    }
+
+    const modal = document.getElementById('rest-timer-modal');
+    const display = document.getElementById('modal-timer-display');
+    
+    // Mostra il modale
+    modal.classList.remove('hidden');
+    
+    // Logica Timer
+    let timeLeft = seconds;
+    
+    // Funzione interna per aggiornare il display
+    const updateDisplay = () => {
+        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const s = (timeLeft % 60).toString().padStart(2, '0');
+        display.textContent = `${m}:${s}`;
+        
+        // Cambio colore negli ultimi 5 secondi
+        if (timeLeft <= 5) {
+            display.classList.add('text-red-500');
+            display.classList.remove('text-white');
+        } else {
+            display.classList.add('text-white');
+            display.classList.remove('text-red-500');
+        }
+    };
+
+    updateDisplay(); // Primo render immediato
+
+    // Pulisce eventuali interval precedenti
+    if (restModalInterval) clearInterval(restModalInterval);
+
+    restModalInterval = setInterval(() => {
+        timeLeft--;
+        updateDisplay();
+
+        if (timeLeft <= 0) {
+            // Tempo scaduto: Vibrazione e Avanti
+            if ('vibrate' in navigator) navigator.vibrate([500, 300, 500]);
+            finishRestAndNext();
+        }
+    }, 1000);
+}
+window.openRestModal = openRestModal;
+
+function finishRestAndNext() {
+    // 1. Ferma il timer
+    if (restModalInterval) {
+        clearInterval(restModalInterval);
+        restModalInterval = null;
+    }
+    
+    // 2. Nascondi il modale
+    const modal = document.getElementById('rest-timer-modal');
+    modal.classList.add('hidden');
+    
+    // 3. Passa al prossimo step
+    nextStep();
+}
+window.finishRestAndNext = finishRestAnd;
+
 function startTotalTimer() {
     if (window.totalTimerInterval) { clearInterval(window.totalTimerInterval); }
     const timerElement = document.getElementById('total-timer');
@@ -1439,7 +1509,13 @@ function renderGuidedMode() {
 	${!isTimedExercise ? `<div class="mt-4 p-4 bg-gray-900 rounded-xl">
 			<label for="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="text-sm font-semibold mb-2 block text-yellow-300">Peso per Serie ${window.currentSet} (Reps: ${exercise.reps})</label>
 			<input type="number" step="0.5" value="${currentWeight}" onchange="window.saveWeight('${window.activeDay}', ${exIndex}, ${window.currentSet - 1}, this.value)" id="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="w-full p-3 text-2xl text-white bg-gray-700 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-center" placeholder="Peso (kg)">
-				<p class="text-sm text-gray-400 mt-2 text-center">Tonnellaggio attuale esercizio: <span class="text-green-400 font-bold">${currentExTonnage.toLocaleString('it-IT')} kg</span></p></div>
+				<p class="text-sm text-gray-400 mt-2 text-center">Tonnellaggio attuale esercizio: <span class="text-green-400 font-bold">${currentExTonnage.toLocaleString('it-IT')} kg</span></p>
+				<!-- NUOVO BOTTONE COMPATTO RECUPERO -->
+                <button onclick="window.openRestModal('${exercise.rest}')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition duration-150 flex justify-center items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Recupero: ${exercise.rest}
+                </button>
+				</div>
 			<!-- Blocco Timer Spostato e Ristilizzato -->
 			<div class="mt-4 p-4 bg-gray-900 rounded-xl"> 
 				<p class="text-sm text-gray-400 mb-2">Recupero Previsto: <span class="text-yellow-300 font-semibold">${exercise.rest}</span></p>
