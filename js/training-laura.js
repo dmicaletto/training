@@ -952,6 +952,72 @@ function runCardioInterval(timerId, exIndex) {
     activeTimers[timerId].interval = interval;
 }
 window.toggleExerciseTimer = toggleExerciseTimer;
+// --- NUOVO: Gestione Modale Riposo ---
+let restModalInterval = null;
+
+function openRestModal(durationString) {
+    const seconds = getRestTimeSeconds(durationString);
+    if (seconds <= 0) {
+        // Se non c'è riposo, passa subito avanti
+        nextStep();
+        return;
+    }
+
+    const modal = document.getElementById('rest-timer-modal');
+    const display = document.getElementById('modal-timer-display');
+    
+    // Mostra il modale
+    modal.classList.remove('hidden');
+    
+    // Logica Timer
+    let timeLeft = seconds;
+    
+    // Funzione interna per aggiornare il display
+    const updateDisplay = () => {
+        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const s = (timeLeft % 60).toString().padStart(2, '0');
+        display.textContent = `${m}:${s}`;
+        
+        // Cambio colore negli ultimi 5 secondi
+        if (timeLeft <= 5) {
+            display.classList.add('text-red-500');
+            display.classList.remove('text-white');
+        } else {
+            display.classList.add('text-white');
+            display.classList.remove('text-red-500');
+        }
+    };
+
+    updateDisplay(); // Primo render immediato
+    // Pulisce eventuali interval precedenti
+    if (restModalInterval) clearInterval(restModalInterval);
+
+    restModalInterval = setInterval(() => {
+        timeLeft--;
+        updateDisplay();
+
+        if (timeLeft <= 0) {
+            // Tempo scaduto: Vibrazione e Avanti
+            if ('vibrate' in navigator) navigator.vibrate([500, 300, 500]);
+            finishRestAndNext();
+        }
+    }, 1000);
+}
+window.openRestModal = openRestModal;
+
+function finishRestAndNext() {
+    // 1. Ferma il timer
+    if (restModalInterval) {
+        clearInterval(restModalInterval);
+        restModalInterval = null;
+    }
+    // 2. Nascondi il modale
+    const modal = document.getElementById('rest-timer-modal');
+    modal.classList.add('hidden');
+    // 3. Passa al prossimo step
+    nextStep();
+}
+window.finishRestAndNext = finishRestAndNext;
 
 function startTotalTimer() { /* ... codice invariato ... */
     if (window.totalTimerInterval) { clearInterval(window.totalTimerInterval); } window.totalTimeSeconds = 0;
@@ -1404,19 +1470,16 @@ function renderGuidedMode() {
     // --- FINE NUOVO ---
     let html = `<div class="bg-gray-800 p-6 mb-6 rounded-xl shadow-2xl border-4 border-blue-500/50"><div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
     <h3 class="text-2xl font-extrabold text-white">${exercise.name}</h3>${!isTimedExercise ? `<span class="text-2xl font-mono font-bold text-yellow-400 p-2 bg-gray-700 rounded-lg">${window.currentSet}/${exercise.sets}</span>` : ''}</div><div class="flex flex-col md:flex-row gap-6"><div class="flex-shrink-0 w-full md:w-1/2"><img src="${getImageUrl(exercise)}" alt="Immagine di ${exercise.name}" onerror="this.onerror=null; this.src='https://placehold.co/400x200/800080/ffffff/png?text=IMMAGINE+NON+DISPONIBILE';" class="w-full h-auto object-cover rounded-lg border border-gray-600 shadow-md aspect-[4/3]">
-    ${!isTimedExercise ? `<div class="mt-4 p-4 bg-gray-900 rounded-xl">
+    ${!isTimedExercise ? 
+      `<div class="mt-4 p-4 bg-gray-900 rounded-xl">
             <label for="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="text-sm font-semibold mb-2 block text-yellow-300">Peso per Serie ${window.currentSet} (Reps: ${exercise.reps})</label>
             <input type="number" step="0.5" value="${currentWeight}" onchange="window.saveWeight('${window.activeDay}', ${exIndex}, ${window.currentSet - 1}, this.value)" id="${window.activeDay}-${exIndex}-${window.currentSet - 1}" class="w-full p-3 text-2xl text-white bg-gray-700 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-center" placeholder="Peso (kg)">
-                <p class="text-sm text-gray-400 mt-2 text-center">Tonnellaggio attuale esercizio: <span class="text-green-400 font-bold">${currentExTonnage.toLocaleString('it-IT')} kg</span></p></div>
-            <!-- Blocco Timer Spostato e Ristilizzato -->
-            <div class="mt-4 p-4 bg-gray-900 rounded-xl"> 
-                <p class="text-sm text-gray-400 mb-2">Recupero Previsto: <span class="text-yellow-300 font-semibold">${exercise.rest}</span></p>
-                <div class="mt-2 flex items-center gap-3">
-                    <button id="timer-button-${window.activeDay}-${exIndex}" onclick="window.toggleTimer('${window.activeDay}', ${exIndex}, '${exercise.rest}', true)" class="px-4 py-3 bg-indigo-600 text-white font-bold rounded-full hover:bg-indigo-700 transition duration-150 shadow-lg flex-grow disabled:opacity-50">Avvia Riposo</button>
-                    <span id="${timerId}" class="text-4xl font-mono tracking-wider text-white flex-shrink-0 min-w-[90px] text-right">${String(Math.floor(restSeconds / 60)).padStart(2, '0')}:${String(restSeconds % 60).padStart(2, '0')}</span>
-                </div>
-                <button id="terminate-button-${window.activeDay}-${exIndex}" onclick="window.terminateRest('${window.activeDay}', ${exIndex})" class="hidden mt-2 px-4 py-2 bg-red-700 text-white font-semibold rounded-full hover:bg-red-800 transition duration-150 shadow-md">Termina in Anticipo</button>
-            </div>`	  		
+            <!-- NUOVO BOTTONE COMPATTO RECUPERO -->
+            <button onclick="window.openRestModal('${exercise.rest}')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition duration-150 flex justify-center items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Recupero: ${exercise.rest}
+            </button>
+        </div>`	  		
         : `
             <!-- NUOVA INTERFACCIA PER ESERCIZI A TEMPO (CARDIO) -->
             <div class="mt-4 p-4 bg-gray-900 rounded-xl">
