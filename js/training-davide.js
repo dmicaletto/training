@@ -695,13 +695,6 @@ function getStableUserId(firebaseUser) {
 	localStorage.setItem(STORAGE_KEY, stored);
 	return stored;
 }
-// --- GESTIONE DATI FIRESTORE (Omesso per brevità, codice invariato) ---
-// (codice di startDataListener, saveWeight, saveNote, ecc. qui)
-
-// --- FUNZIONI DI UTILITY & RENDERING (Omesso per brevità, codice invariato) ---
-// (codice di nextStep, renderGuidedMode, renderDay, ecc. qui)
-
-// ... (resto delle funzioni)
 
 // --- RESTO DELLE FUNZIONI (necessarie per completezza ma omesse per brevità) ---
 function startDataListener(dayId) { /* ... codice invariato ... */ 
@@ -715,15 +708,20 @@ function startDataListener(dayId) { /* ... codice invariato ... */
 		if (docSnap.exists()) {
 			const loggedData = docSnap.data();
 			if (loggedData.exercises) {
-				currentDay.exercises = currentDay.exercises.map((exercise, exIndex) => {
-					const loggedExercise = loggedData.exercises[exIndex];
-					return {
-						...exercise,
-						logged_weights: loggedExercise && loggedExercise.logged_weights ? loggedExercise.logged_weights : {},
-						logged_notes: loggedExercise && loggedExercise.logged_notes ? loggedExercise.logged_notes : "", 
-					};
-				});
-			}
+                currentDay.exercises = currentDay.exercises.map((exercise) => {
+                    // CORREZIONE BUG SKIP:
+                    // Invece di usare l'indice (exIndex), cerchiamo l'esercizio nel log
+                    // corrispondente per NOME. Questo gestisce il riordino causato da "Salta per Ora".
+                    const loggedExercise = loggedData.exercises.find(le => le.name === exercise.name);
+                    return {
+                        ...exercise,
+                        logged_weights: loggedExercise && loggedExercise.logged_weights ? loggedExercise.logged_weights : {},
+                        logged_notes: loggedExercise && loggedExercise.logged_notes ? loggedExercise.logged_notes : "", 
+                        // Aggiungiamo anche il recupero della durata cardio (che mancava nel listener)
+                        logged_duration: loggedExercise && loggedExercise.logged_duration ? loggedExercise.logged_duration : null,
+                    };
+                });
+            }
 		} else {
 			currentDay.exercises = currentDay.exercises.map(exercise => ({ ...exercise, logged_weights: {}, logged_notes: "", }));
 		}
