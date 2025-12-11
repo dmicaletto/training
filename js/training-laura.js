@@ -651,7 +651,7 @@ async function initializeFirebase() {
         renderDay(window.activeDay);
     }
 }
-function startDataListener(dayId) { /* ... codice invariato ... */ 
+function startDataListener(dayId) {
     if (!window.db || !window.userId || !window.isPersistenceEnabled) return;
     if (window.unsubscribeListener) { window.unsubscribeListener(); }
     const docRef = getLogDocumentRef(dayId);
@@ -662,12 +662,18 @@ function startDataListener(dayId) { /* ... codice invariato ... */
         if (docSnap.exists()) {
             const loggedData = docSnap.data();
             if (loggedData.exercises) {
-                currentDay.exercises = currentDay.exercises.map((exercise, exIndex) => {
-                    const loggedExercise = loggedData.exercises[exIndex];
+                currentDay.exercises = currentDay.exercises.map((exercise) => {
+                    // CORREZIONE BUG SKIP:
+                    // Invece di usare l'indice (exIndex), cerchiamo l'esercizio nel log
+                    // corrispondente per NOME. Questo gestisce il riordino causato da "Salta per Ora".
+                    const loggedExercise = loggedData.exercises.find(le => le.name === exercise.name);
+
                     return {
                         ...exercise,
                         logged_weights: loggedExercise && loggedExercise.logged_weights ? loggedExercise.logged_weights : {},
                         logged_notes: loggedExercise && loggedExercise.logged_notes ? loggedExercise.logged_notes : "", 
+                        // Aggiungiamo anche il recupero della durata cardio (che mancava nel listener)
+                        logged_duration: loggedExercise && loggedExercise.logged_duration ? loggedExercise.logged_duration : null,
                     };
                 });
             }
