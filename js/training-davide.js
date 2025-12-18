@@ -137,173 +137,184 @@ function closeHistoryModal() {
 }
 window.closeHistoryModal = closeHistoryModal;
 
-
 /**
  * Carica lo storico degli allenamenti da Firestore e lo renderizza.
  */
 async function loadAndRenderHistory() {
-	const historyColRef = getHistoryCollectionRef();
-	const historyContentDiv = document.getElementById('history-content');
-	historyContentDiv.innerHTML = '<p class="text-center text-yellow-400">Caricamento storico in corso...</p>';
-	
-	if (!historyColRef) {
-		historyContentDiv.innerHTML = '<p class="text-center text-red-500">Errore: Persistenza non attiva o utente non loggato.</p>';
-		return;
-	}
+    const historyColRef = getHistoryCollectionRef();
+    const historyContentDiv = document.getElementById('history-content');
+    historyContentDiv.innerHTML = '<p class="text-center text-yellow-400">Caricamento storico in corso...</p>';
+    
+    if (!historyColRef) {
+        historyContentDiv.innerHTML = '<p class="text-center text-red-500">Errore: Persistenza non attiva o utente non loggato.</p>';
+        return;
+    }
 
-	try {
-		// CORREZIONE: Usiamo query e orderBy per ottenere i documenti ordinati.
-		// Ordina per data (decrescente)
-		const historyQuery = query(historyColRef, orderBy("date", "desc"), orderBy("endTime", "desc"));
-	
-		const querySnapshot = await getDocs(historyQuery); 
-	
-		const historyData = [];
-		querySnapshot.forEach(doc => {
-			historyData.push({ id: doc.id, ...doc.data() });
-		});
-		
-		// --- Preparazione Dati Grafico (Dinamica) ---
-		const chartDataArray = [];
-		const today = new Date();
-		
-		if (window.chartTimeRange === 'week') {
-			// Logica Settimana (Ultimi 7 giorni)
-			const dayLabels = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
-			for (let i = 6; i >= 0; i--) {
-				const d = new Date(today);
-				d.setDate(today.getDate() - i);
-				chartDataArray.push({
-					dateString: d.toISOString().split('T')[0],
-					dayLabel: dayLabels[d.getDay()], // Etichetta: Dom, Lun...
-					totalTonnage: 0,
-					totalCalories: 0,
-					hasWorkout: false
-				});
-			}
-		} else {
-			// Logica Mese (Ultimi 30 giorni)
-			for (let i = 29; i >= 0; i--) {
-				const d = new Date(today);
-				d.setDate(today.getDate() - i);
-				chartDataArray.push({
-					dateString: d.toISOString().split('T')[0],
-					// Etichetta: es. "11 nov"
-					dayLabel: d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }), 
-					totalTonnage: 0,
-					totalCalories: 0,
-					hasWorkout: false
-				});
-			}
-		}
-		// --- Fine blocco preparazione dati ---
-	
-		// --- Inizio HTML Lista ---
-		let listHtml = '<div class="mt-8 pt-4 border-t border-gray-600"><h4 class="text-xl font-bold text-white mb-4">Lista Allenamenti Recenti</h4><div class="space-y-4">';
-		let hasRecentHistory = false;
-	
-		historyData.forEach(log => {
-			hasRecentHistory = true;
-			// Assicurati che i dati siano definiti
-			const totalTonnage = log.totalTonnage ? log.totalTonnage : 0;
-			const estimatedCalories = log.estimatedCalories ? log.estimatedCalories : 0;
-			const durationDisplay = log.durationDisplay || 'N/A';
-			const rating = log.rating || 0;
-	
-			// Popolamento dati grafico
-			const dayData = chartDataArray.find(d => d.dateString === log.date);
-			if (dayData) {
-				dayData.totalTonnage += totalTonnage;
-				dayData.totalCalories += estimatedCalories;
-				dayData.hasWorkout = true;
-			}
-	
-			// Genera stelle per la lista
-			let starsHtml = '';
-			for (let i = 1; i <= 5; i++) {
-				starsHtml += `<span class="text-xs ${i <= rating ? 'text-yellow-400' : 'text-gray-500'}">&#9733;</span>`;
-			}
-	
-			// Creazione HTML per la lista
-			listHtml += `
-				<div class="bg-gray-700 p-4 rounded-lg border border-gray-600 shadow-md">
-					<div class="flex justify-between items-start border-b border-gray-500 pb-2 mb-2">
-						<h4 class="text-xl font-bold text-blue-300">${log.dayName}</h4>
-						<div class="text-right">
-							<span class="text-sm text-gray-400 block">${log.date} (${log.startTime} - ${log.endTime})</span>
-							<div class="mt-1">${starsHtml}</div>
-						</div>
-					</div>
-					<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-						<p>💪 Volume Totale: <span class="font-bold text-white">${totalTonnage.toLocaleString('it-IT')} kg</span></p>
-						<p>🔥 Calorie Stimate: <span class="font-bold text-red-400">${estimatedCalories.toLocaleString('it-IT')} kcal</span></p>
-						<p>🕒 Durata: <span class="font-bold text-white">${durationDisplay}</span></p>
-					</div>
-				</div>
-			`;
-		});
-	
-		if (!hasRecentHistory) {
-			 listHtml += '<p class="text-center text-gray-400 p-8">Nessun allenamento trovato nello storico.</p>';
-		}
-		listHtml += '</div></div>'; // Chiusura space-y-4 e div lista
-	
-		// --- Preparazione Dati e HTML Grafico ---
-		const chartDataForJson = chartDataArray.map(d => ({
-			day: d.dayLabel,
-			totalTonnage: d.totalTonnage,
-			totalCalories: d.totalCalories,
-			hasWorkout: d.hasWorkout
-		}));
-	
-		// Definisce lo stile per i bottoni (attivo/inattivo)
-		const weekBtnClass = window.chartTimeRange === 'week' 
-			? 'bg-blue-600 text-white' 
-			: 'bg-gray-600 text-gray-300 hover:bg-gray-500';
-		const monthBtnClass = window.chartTimeRange === 'month' 
-			? 'bg-blue-600 text-white' 
-			: 'bg-gray-600 text-gray-300 hover:bg-gray-500';
+    try {
+        const historyQuery = query(historyColRef, orderBy("date", "desc"), orderBy("endTime", "desc"));
+        const querySnapshot = await getDocs(historyQuery); 
+        
+        const historyData = [];
+        // Set per raccogliere i nomi unici degli allenamenti (es. Giorno 1, Giorno 2)
+        const uniqueWorkoutNames = new Set();
 
-		let chartHtml = `
-			<div>
-				<div class="flex justify-between items-center mb-4">
-					<h4 class="text-xl font-bold text-white">
-						Statistiche ${window.chartTimeRange === 'week' ? 'Ultimi 7 Giorni' : 'Ultimi 30 Giorni'}
-					</h4>
-					<div class="flex space-x-2">
-						<button onclick="window.setChartTimeRange('week')" class="px-3 py-1 text-sm font-medium rounded-full transition-colors ${weekBtnClass}">
-							Settimana
-						</button>
-						<button onclick="window.setChartTimeRange('month')" class="px-3 py-1 text-sm font-medium rounded-full transition-colors ${monthBtnClass}">
-							Mese
-						</button>
-					</div>
-				</div>
-				<div id="weekly-chart-container" class="relative h-64 md:h-80 min-h-[250px] p-4 bg-gray-700 rounded-lg">
-					<canvas id="weeklyChart"></canvas>
-				</div>
-				<!-- Usiamo un input hidden per passare i dati JSON alla funzione di rendering del grafico -->
-				<textarea id="chart-data-dump" class="hidden">${JSON.stringify(chartDataForJson)}</textarea>
-			</div>
-		`;
-	
-		// Se non ci sono dati NEGLI ULTIMI 7 GIORNI, mostra un messaggio nel grafico
-		const hasDataForChart = chartDataForJson.some(d => d.hasWorkout);
-	
-		// Combina Grafico e Lista
-		historyContentDiv.innerHTML = chartHtml + listHtml;
-	
-		if (hasDataForChart) {
-			renderWeeklyChart();
-		} else {
-			document.getElementById('weekly-chart-container').innerHTML = '<p class="text-center text-gray-400 p-8 flex items-center justify-center h-full">Nessun allenamento negli ultimi 7 giorni per il grafico.</p>';
-		}
-	
-	} catch (error) {
-		console.error("Errore nel caricamento dello storico:", error);
-		historyContentDiv.innerHTML = `<p class="text-center text-red-500 p-8">Impossibile caricare lo storico: ${error.message}.</p>`;
-	}
+        querySnapshot.forEach(doc => {
+            const data = doc.data();
+            historyData.push({ id: doc.id, ...data });
+            if (data.dayName) uniqueWorkoutNames.add(data.dayName);
+        });
+
+        // --- NUOVO: Salviamo i dati in cache per il grafico di progressione ---
+        window.cachedHistoryData = historyData;
+
+        // --- Preparazione Dati Grafico Generale (Settimana/Mese) ---
+        const chartDataArray = [];
+        const today = new Date();
+
+        if (window.chartTimeRange === 'week') {
+            const dayLabels = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(today.getDate() - i);
+                chartDataArray.push({
+                    dateString: d.toISOString().split('T')[0],
+                    dayLabel: dayLabels[d.getDay()],
+                    totalTonnage: 0,
+                    totalCalories: 0,
+                    hasWorkout: false
+                });
+            }
+        } else {
+            for (let i = 29; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(today.getDate() - i);
+                chartDataArray.push({
+                    dateString: d.toISOString().split('T')[0],
+                    dayLabel: d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }), 
+                    totalTonnage: 0,
+                    totalCalories: 0,
+                    hasWorkout: false
+                });
+            }
+        }
+
+        // --- Popolamento Dati Grafico Generale e Lista ---
+        let listHtml = '<div class="mt-8 pt-4 border-t border-gray-600"><h4 class="text-xl font-bold text-white mb-4">Lista Allenamenti Recenti</h4><div class="space-y-4">';
+        let hasRecentHistory = false;
+
+        historyData.forEach(log => {
+            hasRecentHistory = true;
+            const totalTonnage = log.totalTonnage || 0;
+            const estimatedCalories = log.estimatedCalories || 0;
+            const durationDisplay = log.durationDisplay || 'N/A';
+            const rating = log.rating || 0;
+
+            const dayData = chartDataArray.find(d => d.dateString === log.date);
+            if (dayData) {
+                dayData.totalTonnage += totalTonnage;
+                dayData.totalCalories += estimatedCalories;
+                dayData.hasWorkout = true;
+            }
+
+            let starsHtml = '';
+            for (let i = 1; i <= 5; i++) {
+                starsHtml += `<span class="text-xs ${i <= rating ? 'text-yellow-400' : 'text-gray-500'}">&#9733;</span>`;
+            }
+
+            listHtml += `
+                <div class="bg-gray-700 p-4 rounded-lg border border-gray-600 shadow-md">
+                    <div class="flex justify-between items-start border-b border-gray-500 pb-2 mb-2">
+                        <h4 class="text-lg font-bold text-blue-300 leading-tight">${log.dayName}</h4>
+                        <div class="text-right flex-shrink-0 ml-2">
+                            <span class="text-xs text-gray-400 block">${log.date}</span>
+                            <div class="mt-1">${starsHtml}</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                        <div><p class="text-gray-400">Volume</p><p class="font-bold text-white">${totalTonnage.toLocaleString('it-IT')} kg</p></div>
+                        <div><p class="text-gray-400">Calorie</p><p class="font-bold text-red-400">${estimatedCalories} kcal</p></div>
+                        <div><p class="text-gray-400">Durata</p><p class="font-bold text-white">${durationDisplay}</p></div>
+                    </div>
+                </div>
+            `;
+        });
+
+        if (!hasRecentHistory) listHtml += '<p class="text-center text-gray-400 p-8">Nessun allenamento trovato.</p>';
+        listHtml += '</div></div>';
+
+        // --- Costruzione Grafico Generale ---
+        const chartDataForJson = chartDataArray.map(d => ({
+            day: d.dayLabel,
+            totalTonnage: d.totalTonnage,
+            totalCalories: d.totalCalories,
+            hasWorkout: d.hasWorkout
+        }));
+
+        const weekBtnClass = window.chartTimeRange === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300';
+        const monthBtnClass = window.chartTimeRange === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300';
+
+        // --- NUOVO: Costruzione Sezione Progressione ---
+        // Creiamo le option per il dropdown basandoci sui nomi unici trovati
+        let progressionOptions = '';
+        uniqueWorkoutNames.forEach(name => {
+            progressionOptions += `<option value="${name}">${name}</option>`;
+        });
+
+        // Se non ci sono allenamenti, mettiamo un placeholder
+        const progressionSectionHtml = uniqueWorkoutNames.size > 0 ? `
+            <div class="mt-8 pt-4 border-t border-gray-600">
+                <h4 class="text-xl font-bold text-white mb-4">Progressione Allenamento</h4>
+                <div class="mb-4">
+                    <label for="progression-select" class="block text-xs font-medium text-gray-400 mb-1 uppercase">Seleziona Scheda</label>
+                    <select id="progression-select" onchange="window.renderProgressionChart(this.value)" class="w-full p-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        ${progressionOptions}
+                    </select>
+                </div>
+                <div class="relative h-64 md:h-80 min-h-[250px] p-4 bg-gray-700 rounded-lg">
+                    <canvas id="progressionChart"></canvas>
+                </div>
+            </div>
+        ` : '';
+
+        // --- Assemblaggio HTML Finale ---
+        let chartHtml = `
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-xl font-bold text-white">Statistiche ${window.chartTimeRange === 'week' ? '7gg' : '30gg'}</h4>
+                    <div class="flex space-x-2">
+                        <button onclick="window.setChartTimeRange('week')" class="px-3 py-1 text-xs font-medium rounded-full transition-colors ${weekBtnClass}">Sett.</button>
+                        <button onclick="window.setChartTimeRange('month')" class="px-3 py-1 text-xs font-medium rounded-full transition-colors ${monthBtnClass}">Mese</button>
+                    </div>
+                </div>
+                <div id="weekly-chart-container" class="relative h-64 md:h-80 min-h-[250px] p-4 bg-gray-700 rounded-lg">
+                    <canvas id="weeklyChart"></canvas>
+                </div>
+                <textarea id="chart-data-dump" class="hidden">${JSON.stringify(chartDataForJson)}</textarea>
+            </div>
+        `;
+        
+        // Ordine: Grafico Generale -> Grafico Progressione -> Lista
+        historyContentDiv.innerHTML = chartHtml + progressionSectionHtml + listHtml;
+        
+        // Render dei grafici
+        if (chartDataForJson.some(d => d.hasWorkout)) {
+            renderWeeklyChart();
+        } else {
+            document.getElementById('weekly-chart-container').innerHTML = '<p class="text-center text-gray-400 p-8 flex items-center justify-center h-full">Nessun dato recente.</p>';
+        }
+
+        // Render iniziale del grafico progressione (seleziona il primo allenamento della lista)
+        if (uniqueWorkoutNames.size > 0) {
+            const firstWorkout = uniqueWorkoutNames.values().next().value;
+            renderProgressionChart(firstWorkout);
+        }
+
+    } catch (error) {
+        console.error("Errore storico:", error);
+        historyContentDiv.innerHTML = `<p class="text-center text-red-500 p-8">Errore: ${error.message}</p>`;
+    }
 }
+window.loadAndRenderHistory = loadAndRenderHistory;
 
 /**
  * Renderizza il contenuto dinamico della modale profilo.
@@ -861,6 +872,75 @@ async function generateExerciseTip(exerciseName, exerciseElement) { /* ... codic
 }
 window.generateExerciseTip = generateExerciseTip;
 
+// --- NUOVO: Disegna il grafico di progressione per un allenamento specifico ---
+function renderProgressionChart(workoutName) {
+    const canvas = document.getElementById('progressionChart');
+    if (!canvas) return;
+    
+    // Distruggi il grafico precedente se esiste
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) existingChart.destroy();
+
+    // Recuperiamo i dati dalla cache globale (che popoleremo nel prossimo passo)
+    if (!window.cachedHistoryData) return;
+
+    // 1. Filtra i dati solo per questo tipo di allenamento
+    // 2. Ordina per data (dal più vecchio al più recente) per vedere la linea temporale corretta
+    const data = window.cachedHistoryData
+        .filter(log => log.dayName === workoutName)
+        .sort((a, b) => new Date(a.date + 'T' + a.endTime) - new Date(b.date + 'T' + b.endTime));
+
+    if (data.length === 0) {
+        // Gestione caso nessun dato (magari mostra un messaggio o un grafico vuoto)
+        return;
+    }
+
+    const labels = data.map(d => {
+        // Formatta la data es. "18/12"
+        const dateObj = new Date(d.date);
+        return `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
+    });
+    const tonnages = data.map(d => d.totalTonnage);
+
+    new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Volume Totale (kg)',
+                data: tonnages,
+                borderColor: '#10b981', // Verde smeraldo
+                backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                borderWidth: 2,
+                tension: 0.3, // Linea curva morbida
+                fill: true,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#10b981',
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { 
+                    ticks: { color: '#9ca3af' }, 
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' } 
+                },
+                y: { 
+                    beginAtZero: false, // Non partire da 0 per evidenziare meglio i miglioramenti
+                    ticks: { color: '#9ca3af' }, 
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' } 
+                }
+            },
+            plugins: {
+                legend: { labels: { color: 'white' } },
+                tooltip: { mode: 'index', intersect: false }
+            }
+        }
+    });
+}
+window.renderProgressionChart = renderProgressionChart;
 function getImageUrl(exercise) { 
 	return exercise.imageUrl || `https://placehold.co/400x200/800080/ffffff/png?text=IMMAGINE+PER+${encodeURIComponent(exercise.name.toUpperCase().replace(/\s/g, '+'))}`; 
 }
