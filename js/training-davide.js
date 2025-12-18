@@ -42,10 +42,11 @@ window.workoutDays = {
 	'day_1': {
 		name: "Giorno 1: Petto e Tricipiti",
 		exercises: [
-			{ name: "Panca Piana - Bilanciere", sets: 3, reps: "12-10-10-8", rest: "90s", defaultWeight: 20, imageUrl: './images/panca-piana.gif?text=PANCA+PIANA', notes: "Mantieni le spalle basse e concentratevi solo sulla contrazione del petto." },
+			{ name: "Panca Piana - Bilanciere", sets: 4, reps: "12-10-10-8", rest: "90s", defaultWeight: 20, imageUrl: './images/panca-piana.gif?text=PANCA+PIANA', notes: "Mantieni le spalle basse e concentratevi solo sulla contrazione del petto." },
 			{ name: "Panca 30° Multypower", sets: 3, reps: "10", rest: "90s", defaultWeight: 6, imageUrl: './images/panca-multypower.gif?text=PANCA+INCLINATA+MULTYPOWER?text=FRENCH+PRESS', notes: "Movimento controllato, senti l'allungamento. Usa un peso moderato." },
 			{ name: "Croci al Cavo alto", sets: 3, reps: "10 (x braccio)", rest: "60s", defaultWeight: 10, imageUrl: './images/Croci-ai-cavi-alti.gif?text=TRICIPITI+PUSH', notes: "Porta il cavo fino in fondo. Contrai il tricipite alla massima estensione." },
 			{ name: "Chest Press distensioni delle braccia", sets: 3, reps: "10", rest: "90s", defaultWeight: 20, imageUrl: './images/Chest-Press-Machine.gif?text=CHEST+PRESS', notes: "Spingi i gomiti in avanti. Contrai il petto al massimo accorciamento." },
+			{ name: "Pull Over - Manubrio", sets: 3, reps: "12", rest: "90s", defaultWeight: 20, imageUrl: './images/pullover.gif?text=PULLOVER+MANUBRIO', notes: "" },
 			{ name: "Spinte in Basso (Pushdown)", sets: 3, reps: "12", rest: "60s", defaultWeight: 10, imageUrl: './images/pushdown.png?text=TRICIPITI+PUSH', notes: "Porta il cavo fino in fondo. Contrai il tricipite alla massima estensione." },
 			{ name: "French Press (Manubri) panca 30°", sets: 3, reps: "12 (x braccio)", rest: "90s", defaultWeight: 6, imageUrl: './images/french-press.png?text=PECTORAL+FLY?text=FRENCH+PRESS', notes: "Movimento controllato, senti l'allungamento. Usa un peso moderato." },
 			{ name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/hyperextension.gif?text=HYPEREXTENSION', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
@@ -55,9 +56,9 @@ window.workoutDays = {
 	'day_2': {
 		name: "Giorno 2: Gambe e Spalle",
 		exercises: [
-			{ name: "Leg Press", sets: 3, reps: "10", rest: "90s", defaultWeight: 120, imageUrl: './images/leg-press.png?text=LEG+PRESS', notes: "Non bloccare le ginocchia in alto. Spingi con i talloni." },
-			{ name: "Leg Extension", sets: 3, reps: "12", rest: "90s", defaultWeight: 120, imageUrl: './images/legext.png?text=LEG+EXT', notes: "Contrai il quadricipite per un secondo al massimo accorciamento." },
-			{ name: "Leg Curl Sdraiato", sets: 3, reps: "12", rest: "90s", defaultWeight: 120, imageUrl: './images/leg-curl-sdraiato-bg.png?text=LEG+CURL', notes: "Focus sui femorali. Movimento lento in fase negativa." },
+			{ name: "Leg Press", sets: 4, reps: "10", rest: "90s", defaultWeight: 70, imageUrl: './images/leg-press.png?text=LEG+PRESS', notes: "Non bloccare le ginocchia in alto. Spingi con i talloni." },
+			{ name: "Leg Extension", sets: 3, reps: "12", rest: "90s", defaultWeight: 25, imageUrl: './images/legext.png?text=LEG+EXT', notes: "Contrai il quadricipite per un secondo al massimo accorciamento." },
+			{ name: "Leg Curl Sdraiato", sets: 3, reps: "12", rest: "90s", defaultWeight: 25, imageUrl: './images/leg-curl-sdraiato-bg.png?text=LEG+CURL', notes: "Focus sui femorali. Movimento lento in fase negativa." },
 			{ name: "Lento avanti panca 70°", sets: 3, reps: "10 (x braccio)", rest: "90s", defaultWeight: 15, imageUrl: './images/lento-manubri.gif?text=LENTO+MANUBRI', notes: "Siediti in modo da isolare solo gli adduttori. Controlla il ritorno." },
 			{ name: "Alzate Laterali", sets: 3, reps: "10 (x braccio)", rest: "60s", defaultWeight: 8, imageUrl: './images/alzate-laterali.png?text=ALZATE+LATERALI', notes: "Gomiti leggermente flessi. Porta i manubri all'altezza delle spalle, non più su." },
 			{ name: "alzate posteriori su panca", sets: 3, reps: "10 (x braccio)", rest: "60s", defaultWeight: 8, imageUrl: './images/inverso-manubri-panca-alta-bg.png?text=ALZATE+POSTERIORI', notes: "Solleva alternando le braccia o entrambe insieme. Movimento controllato." },
