@@ -1826,3 +1826,64 @@ async function checkAndRestoreSession() {
         console.error("Errore nel ripristino della sessione:", error);
     }
 }
+
+// --- TOOL DI MIGRAZIONE MANUALE ---
+
+/**
+ * Copia tutto lo storico da un vecchio user ID all'utente attualmente loggato.
+ * Da usare una volta sola per recuperare i dati persi.
+ */
+async function migrateFromOldUser(oldUserId) {
+    if (!oldUserId) {
+        alert("Devi specificare il vecchio ID!");
+        return;
+    }
+    if (!window.userId) {
+        alert("Devi essere loggato col nuovo utente per ricevere i dati.");
+        return;
+    }
+    
+    if (!confirm(`Sei sicuro di voler copiare lo storico da ${oldUserId} all'utente corrente?`)) return;
+
+    showTemporaryMessage('Inizio migrazione dati...', 'bg-yellow-600');
+    
+    try {
+        // 1. Riferimento alla vecchia collezione
+        const oldHistoryRef = collection(window.db, `artifacts/${window.appId}/users/${oldUserId}/workout_history`);
+        
+        // 2. Riferimento alla nuova collezione (Utente attuale)
+        const newHistoryRef = collection(window.db, `artifacts/${window.appId}/users/${window.userId}/workout_history`);
+        
+        // 3. Leggi i vecchi dati
+        const snapshot = await getDocs(oldHistoryRef);
+        
+        if (snapshot.empty) {
+            showTemporaryMessage('Nessun dato trovato nel vecchio ID.', 'bg-red-500');
+            return;
+        }
+        
+        let count = 0;
+        const promises = [];
+        
+        // 4. Copia ogni documento
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            // Aggiungiamo al nuovo utente (addDoc genera un nuovo ID univoco)
+            promises.push(addDoc(newHistoryRef, data));
+            count++;
+        });
+        
+        // Aspetta che tutte le copie siano finite
+        await Promise.all(promises);
+        
+        showTemporaryMessage(`Successo! Recuperati ${count} allenamenti.`, 'bg-green-600');
+        
+        // Ricarica la vista per mostrare i nuovi dati
+        loadAndRenderHistory();
+        
+    } catch (err) {
+        console.error("Errore migrazione:", err);
+        showTemporaryMessage('Errore durante la migrazione. Controlla la console.', 'bg-red-500');
+    }
+}
+window.migrateFromOldUser = migrateFromOldUser;
