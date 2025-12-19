@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, 
+		setPersistence, browserLocalPersistence, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, query, orderBy, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; 
 import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -36,6 +37,61 @@ window.userProfile = {
 	sex: 'F' 
 };
 
+// --- NUOVE FUNZIONI DI LOGIN / LOGOUT ---
+async function handleAuth() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const errorMsg = document.getElementById('auth-error');
+    const btn = document.getElementById('btn-login');
+    
+    errorMsg.classList.add('hidden');
+    btn.disabled = true;
+    btn.textContent = 'Accesso in corso...';
+
+    try {
+        await signInWithEmailAndPassword(window.auth, email, password);
+        // Se ok, il listener onAuthStateChanged farà sparire il modale
+    } catch (error) {
+        console.error(error);
+        errorMsg.textContent = "Errore: Email o password errati.";
+        errorMsg.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Accedi';
+    }
+}
+window.handleAuth = handleAuth;
+
+async function handleRegister() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const errorMsg = document.getElementById('auth-error');
+    
+    if (!email || password.length < 6) {
+        errorMsg.textContent = "Inserisci email e password (min 6 caratteri).";
+        errorMsg.classList.remove('hidden');
+        return;
+    }
+
+    if(!confirm("Creare un nuovo account con questa email?")) return;
+
+    try {
+        await createUserWithEmailAndPassword(window.auth, email, password);
+    } catch (error) {
+        let msg = "Errore registrazione.";
+        if (error.code === 'auth/email-already-in-use') msg = "Email già registrata.";
+        errorMsg.textContent = msg;
+        errorMsg.classList.remove('hidden');
+    }
+}
+window.handleRegister = handleRegister;
+
+async function logout() {
+    if(confirm("Vuoi uscire?")) {
+        await signOut(window.auth);
+        window.location.reload(); 
+    }
+}
+window.logout = logout;
 
 // Struttura degli allenamenti (DATI MOCK AGGIORNATI CON NOTE DI DEFAULT)
 window.workoutDays = {
@@ -598,106 +654,86 @@ const MANUAL_FIREBASE_CONFIG = {
 	appId: "1:149618028951:web:03756bdf1273a4521954d2"
 };
 
+// --- FIREBASE INITIALIZATION AND AUTHENTICATION ---
+
 async function initializeFirebase() {
-	let firebaseConfig;
-	let initialAuthToken = null;
-	let appId = 'training-davide-app-id';
-	let persistenceAttempted = true;
+    const MANUAL_FIREBASE_CONFIG = {
+        apiKey: "AIzaSyCfTXY1foD8Dr9UxRNzLeOu680aNtIw4TA",
+        authDomain: "training-c0b76.firebaseapp.com",
+        projectId: "training-c0b76",
+        storageBucket: "training-c0b76.firebasestorage.app",
+        messagingSenderId: "149618028951",
+        appId: "1:149618028951:web:03756bdf1273a4521954d2"
+    };
 
-	try {
-		// 1. Tenta variabili Canvas (PRIORITÀ)
-		const canvasConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-		const canvasToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-		const canvasAppId = typeof __app_id !== 'undefined' ? __app_id : appId;
-		
-		if (Object.keys(canvasConfig).length > 0) {
-			firebaseConfig = canvasConfig;
-			initialAuthToken = canvasToken;
-			appId = canvasAppId;
-			window.isPersistenceEnabled = true;
-			document.getElementById('status-message').textContent = 'Connesso (Canvas Environment). La persistenza è attiva.';
-		} else if (Object.keys(MANUAL_FIREBASE_CONFIG).length > 0) {
-			// 2. Usa la configurazione manuale (FALLBACK)
-			firebaseConfig = MANUAL_FIREBASE_CONFIG;
-			appId = firebaseConfig.projectId || 'manual-app-id';
-			window.isPersistenceEnabled = true;
-			document.getElementById('status-message').textContent = 'Connesso (Configurazione Manuale). La persistenza è attiva.';
-		} else {
-			// 3. Nessuna configurazione trovata (Modalità Solo Visualizzazione)
-			persistenceAttempted = false;
-			window.isPersistenceEnabled = false;
-			document.getElementById('status-message').textContent = 'ATTENZIONE: Persistenza disabilitata. Dati NON saranno salvati.';
-		}
-		
-		if (!persistenceAttempted) {
-			await loadUserProfile(); // Carica il profilo di default e renderizza il titolo
-			renderDay(window.activeDay);
-			return; 
-		}
+    let firebaseConfig;
+    let appId = 'training-davide-app-id';
 
-		// --- Inizializzazione Firebase ---
-		setLogLevel('error'); // Mostra solo errori per pulizia console
-		window.firebaseApp = initializeApp(firebaseConfig);
-		window.db = getFirestore(window.firebaseApp);
-		window.auth = getAuth(window.firebaseApp);
-		// Imposta la persistenza a "local" (localStorage).
-		// Questo manterrà l'utente anonimo loggato anche dopo la chiusura del browser.
-		await setPersistence(window.auth, browserLocalPersistence);
-		window.appId = appId; // Store appId globally
+    // Gestione Configurazione (Canvas vs Manuale)
+    const canvasConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+    if (Object.keys(canvasConfig).length > 0) {
+        firebaseConfig = canvasConfig;
+        appId = typeof __app_id !== 'undefined' ? __app_id : appId;
+    } else {
+        firebaseConfig = MANUAL_FIREBASE_CONFIG;
+        appId = firebaseConfig.projectId;
+    }
 
-		// Autenticazione
-		if (initialAuthToken) {
-			await signInWithCustomToken(window.auth, initialAuthToken);
-		} else {
-			await signInAnonymously(window.auth);
-		}
+    window.appId = appId;
+    window.isPersistenceEnabled = true;
 
-		// Listener per l'autenticazione
-		onAuthStateChanged(window.auth, (user) => {
-			if (user) {
-				window.userId = getStableUserId(user);
-				document.getElementById('user-id').textContent = `ID Utente: ${user.uid}`;
-				
-				// 1. Carica il Profilo in modo sicuro
-				loadUserProfile().then(() => {
-					// 2. Esegui il rendering INIZIALE con i dati caricati/di default
-					renderDay(window.activeDay);
-					
-					// 3. Se autenticato E persistenza attiva, avvia l'ascolto in background.
-					if (window.userId && window.isPersistenceEnabled) {
-						 startDataListener(window.activeDay); 
-						 // --- NUOVA AGGIUNTA ---
-					     checkAndRestoreSession(); // Controlla se c'era un allenamento in corso
-					     // ----------------------
-					}
-					// Nasconde la barra di stato dopo 1 secondo
-					setTimeout(() => {
-						document.getElementById('status-container')?.classList.add('hidden');
-					}, 1000);
-				}).catch(err => {
-					 // Fallback se loadUserProfile fallisce, forziamo il rendering
-					 console.error("Errore fatale nel caricamento utente, forzo il rendering:", err);
-					 renderDay(window.activeDay);
-				});
+    // Inizializzazione
+    window.firebaseApp = initializeApp(firebaseConfig);
+    window.db = getFirestore(window.firebaseApp);
+    window.auth = getAuth(window.firebaseApp);
+    
+    // Imposta persistenza locale (così resti loggato se chiudi il browser)
+    await setPersistence(window.auth, browserLocalPersistence);
 
-			} else {
-				document.getElementById('status-message').textContent = 'Non autenticato. Dati locali.';
-				window.userId = null;
-				renderUserProfileTitle();
-				renderDay(window.activeDay); // Aggiunto fallback rendering
-			}
-		});
+    // Listener di Stato: Gestisce Login e Logout
+    onAuthStateChanged(window.auth, (user) => {
+        const loginModal = document.getElementById('login-modal');
+        const statusContainer = document.getElementById('status-container');
 
-	} catch (error) {
-		console.error("Errore durante l'inizializzazione di Firebase:", error);
-		document.getElementById('status-message').textContent = 'Errore grave nell\'inizializzazione di Firebase. Persistenza disabilitata.';
-		window.isPersistenceEnabled = false;
-		
-		// Assicura il rendering in caso di errore critico
-		await loadUserProfile(); 
-		renderDay(window.activeDay);
-	}
+        if (user) {
+            // --- UTENTE LOGGATO ---
+            console.log("Utente connesso:", user.email);
+            window.userId = user.uid; // Usiamo l'ID sicuro di Firebase
+            
+            // Nascondi schermata login
+            if(loginModal) loginModal.classList.add('hidden');
+            
+            // Aggiorna UI
+            const userIdDisplay = document.getElementById('user-id');
+            if(userIdDisplay) {
+                userIdDisplay.textContent = `Utente: ${user.email}`;
+                userIdDisplay.classList.remove('hidden');
+            }
+            
+            // Carica i dati dell'utente
+            loadUserProfile().then(() => {
+                renderDay(window.activeDay);
+                startDataListener(window.activeDay); 
+                checkAndRestoreSession(); // Decommenta se hai implementato il restore session
+                
+                // Nascondi barra di stato
+                setTimeout(() => statusContainer?.classList.add('hidden'), 1000);
+            });
+
+        } else {
+            // --- UTENTE NON LOGGATO ---
+            console.log("Nessun utente. In attesa di login.");
+            window.userId = null;
+            
+            // Mostra schermata login (bloccante)
+            if(loginModal) loginModal.classList.remove('hidden');
+            
+            // Nascondi barra di stato (per pulizia)
+            if(statusContainer) statusContainer.classList.add('hidden');
+        }
+    });
 }
+window.initializeFirebase = initializeFirebase;
 // --- FUNZIONE ID STABILE ---
 function getStableUserId(firebaseUser) {
 	const STORAGE_KEY = 'training_user_id_v1';
