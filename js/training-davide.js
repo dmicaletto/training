@@ -112,14 +112,15 @@ window.workoutDays = {
 	'day_2': {
 		name: "Giorno 2: Gambe e Spalle",
 		exercises: [
+			{ name: "Calf Raises on leg press", sets: 4, reps: "10", rest: "90s", defaultWeight: 50, imageUrl: './images/Calf-Press-on-Leg-Press-Machine.gif?text=CALF+RAISES+LEG+PRESS', notes: "Spingi con le punte." },
 			{ name: "Leg Press", sets: 4, reps: "10", rest: "90s", defaultWeight: 70, imageUrl: './images/leg-press.png?text=LEG+PRESS', notes: "Non bloccare le ginocchia in alto. Spingi con i talloni." },
 			{ name: "Leg Extension", sets: 3, reps: "12", rest: "90s", defaultWeight: 25, imageUrl: './images/legext.png?text=LEG+EXT', notes: "Contrai il quadricipite per un secondo al massimo accorciamento." },
 			{ name: "Leg Curl Sdraiato", sets: 3, reps: "12", rest: "90s", defaultWeight: 25, imageUrl: './images/leg-curl-sdraiato-bg.png?text=LEG+CURL', notes: "Focus sui femorali. Movimento lento in fase negativa." },
 			{ name: "Lento avanti panca 70°", sets: 3, reps: "10 (x braccio)", rest: "90s", defaultWeight: 15, imageUrl: './images/lento-manubri.gif?text=LENTO+MANUBRI', notes: "Siediti in modo da isolare solo gli adduttori. Controlla il ritorno." },
-			{ name: "Alzate Laterali", sets: 3, reps: "10 (x braccio)", rest: "60s", defaultWeight: 8, imageUrl: './images/alzate-laterali.png?text=ALZATE+LATERALI', notes: "Gomiti leggermente flessi. Porta i manubri all'altezza delle spalle, non più su." },
-			{ name: "alzate posteriori su panca", sets: 3, reps: "10 (x braccio)", rest: "60s", defaultWeight: 8, imageUrl: './images/inverso-manubri-panca-alta-bg.png?text=ALZATE+POSTERIORI', notes: "Solleva alternando le braccia o entrambe insieme. Movimento controllato." },
-			{ name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/hyperextension.gif?text=HYPEREXTENSION', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
-			{ name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/ABS_CRUNCH_MC.gif?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
+			{ name: "Alzate Laterali", sets: 3, reps: "10 (x braccio)", rest: "60s", defaultWeight: 12, imageUrl: './images/alzate-laterali.png?text=ALZATE+LATERALI', notes: "Gomiti leggermente flessi. Porta i manubri all'altezza delle spalle, non più su." },
+			{ name: "alzate posteriori su panca", sets: 3, reps: "10 (x braccio)", rest: "60s", defaultWeight: 10, imageUrl: './images/inverso-manubri-panca-alta-bg.png?text=ALZATE+POSTERIORI', notes: "Solleva alternando le braccia o entrambe insieme. Movimento controllato." },
+			{ name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 10, imageUrl: './images/hyperextension.gif?text=HYPEREXTENSION', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
+			{ name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 20, imageUrl: './images/ABS_CRUNCH_MC.gif?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
 		]
 	},
 	'day_3': {
@@ -131,8 +132,8 @@ window.workoutDays = {
 			{ name: "Row Machine", sets: 3, reps: "10-12", rest: "60s", defaultWeight: 20, imageUrl: './images/Row-Machine.gif?text=ROW+MACHINE', notes: "Petto in fuori, schiena inarcata. Porta il triangolo all'ombelico." },
 			{ name: "Curl seduto con Manubri", sets: 3, reps: "8-12 (x braccio)", rest: "90s", defaultWeight: 25, imageUrl: './images/curl-manubri-seduto-bg.png?text=CURL+BILANCIERE', notes: "Ruota il polso (supinazione) durante la salita. Non oscillare." },
 			{ name: "Hammer curl in piedi", sets: 3, reps: "10-12", rest: "60s", defaultWeight: 10, imageUrl: './images/hammer-curl.png?text=CURL+HAMMER', notes: "Focus sull'avambraccio. Presa neutra e stretta." },
-			{ name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/hyperextension.gif?text=HYPEREXTENSION', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
-			{ name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/ABS_CRUNCH_MC.gif?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
+			{ name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 10, imageUrl: './images/hyperextension.gif?text=HYPEREXTENSION', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
+			{ name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 20, imageUrl: './images/ABS_CRUNCH_MC.gif?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
 		]
 	},
 	'day_4': {
@@ -144,8 +145,8 @@ window.workoutDays = {
 			{ name: "Alzate Laterali", sets: 3, reps: "10 (x braccio)", rest: "60s", defaultWeight: 8, imageUrl: './images/alzate-laterali.png?text=ALZATE+LATERALI', notes: "Gomiti leggermente flessi. Porta i manubri all'altezza delle spalle, non più su." },
 			{ name: "Alzate Frontali", sets: 3, reps: "10 (x braccio)", rest: "60s", defaultWeight: 8, imageUrl: './images/alzate-frontali.png?text=ALZATE+FRONTALI', notes: "Solleva alternando le braccia o entrambe insieme. Movimento controllato." },
 			{ name: "Alzate Posteriori su panca", sets: 3, reps: "10 (x braccio)", rest: "60s", defaultWeight: 8, imageUrl: './images/inverso-manubri-panca-alta-bg.png?text=ALZATE+POSTERIORI', notes: "Solleva alternando le braccia o entrambe insieme. Movimento controllato." },
-			{ name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/hyperextension.gif?text=HYPEREXTENSION', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
-			{ name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 40, imageUrl: './images/ABS_CRUNCH_MC.gif?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
+			{ name: "Lombari Iperestensioni", sets: 3, reps: "15", rest: "60s", defaultWeight: 10, imageUrl: './images/hyperextension.gif?text=HYPEREXTENSION', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
+			{ name: "Abdoninal Crunch", sets: 3, reps: "15", rest: "60s", defaultWeight: 20, imageUrl: './images/ABS_CRUNCH_MC.gif?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
 		]
 	},
 };
