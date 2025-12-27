@@ -746,8 +746,7 @@ function getStableUserId(firebaseUser) {
 	return stored;
 }
 
-// --- RESTO DELLE FUNZIONI (necessarie per completezza ma omesse per brevità) ---
-function startDataListener(dayId) { /* ... codice invariato ... */ 
+function startDataListener(dayId) { 
 	if (!window.db || !window.userId || !window.isPersistenceEnabled) return;
 	if (window.unsubscribeListener) { window.unsubscribeListener(); }
 	const docRef = getLogDocumentRef(dayId);
@@ -872,7 +871,7 @@ function showTemporaryMessage(message, colorClass) {
 }
 // window.showTemporaryMessage = showTemporaryMessage;
 
-async function generateExerciseTip(exerciseName, exerciseElement) { /* ... codice invariato ... */
+async function generateExerciseTip(exerciseName, exerciseElement) { 
 	const apiKey = "AIzaSyDQWJzCNs3nhLll9iEwj3P5zEeeFruooQ4";
 	const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 	const button = document.getElementById(`tip-btn-${exerciseElement.id.replace('tip-output-', '')}`);
@@ -1238,6 +1237,9 @@ function toggleTimer(dayId, exIndex, restString, isGuided = false) { /* ... codi
 }
 window.toggleTimer = toggleTimer;
 function startGuidedMode(isResuming = false) {
+	// --- NUOVO: Tieni lo schermo acceso per tutto l'allenamento ---
+    requestWakeLock();
+    // -------------------------------------------------------------
     window.isGuidedMode = true;
     
     if (!isResuming) {
@@ -1320,6 +1322,9 @@ window.stopGuidedMode = stopGuidedMode;
  * Pulisce e resetta la UI alla fine della modalità guidata.
  */
 function __internal_cleanup_guided_mode() {
+	// --- NUOVO: Rilascia il blocco schermo quando esci ---
+    releaseWakeLock();
+    // ----------------------------------------------------
 	clearActiveSession(); // Rimuove il salvataggio temporaneo
 	// 5. Azzera tutte le variabili globali
 	window.isGuidedMode = false; 
@@ -1829,6 +1834,33 @@ async function checkAndRestoreSession() {
     }
 }
 
+// --- GESTIONE WAKE LOCK (Mantiene lo schermo acceso) ---
+window.wakeLock = null;
+
+async function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+        try {
+            window.wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Schermo mantenuto attivo');
+        } catch (err) {
+            console.warn(`Impossibile attivare Wake Lock: ${err.name}, ${err.message}`);
+        }
+    }
+}
+
+async function releaseWakeLock() {
+    if (window.wakeLock !== null) {
+        await window.wakeLock.release();
+        window.wakeLock = null;
+        console.log('Wake Lock rilasciato');
+    }
+}
+// Ri-acquisisci il blocco schermo se l'utente torna sull'app durante l'allenamento
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && window.isGuidedMode) {
+        await requestWakeLock();
+    }
+});
 // --- TOOL DI MIGRAZIONE MANUALE ---
 
 /**
