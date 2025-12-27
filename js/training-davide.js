@@ -132,7 +132,7 @@ window.workoutDays = {
 			{ name: "Row Machine", sets: 3, reps: "10-12", rest: "60s", defaultWeight: 50, imageUrl: './images/Row-Machine.gif?text=ROW+MACHINE', notes: "Petto in fuori, schiena inarcata. Porta il triangolo all'ombelico." },
 			{ name: "Curl seduto con Manubri", sets: 3, reps: "8-12 (x braccio)", rest: "90s", defaultWeight: 12, imageUrl: './images/curl-manubri-seduto-bg.png?text=CURL+BILANCIERE', notes: "Ruota il polso (supinazione) durante la salita. Non oscillare." },
 			{ name: "Hammer curl in piedi", sets: 3, reps: "10-12", rest: "60s", defaultWeight: 15, imageUrl: './images/hammer-curl.png?text=CURL+HAMMER', notes: "Focus sull'avambraccio. Presa neutra e stretta." },
-			{ name: "Trazioni alla sbarra Chin Up", sets: 3, reps: "10-12", rest: "60s", defaultWeight: 40, imageUrl: './images/chin-up.gif?text=CHIN+UP', notes: "Focus sull'avambraccio. Presa neutra e stretta." },
+			{ name: "Trazioni alla sbarra Chin Up", sets: 3, reps: "10", rest: "60s", defaultWeight: 40, imageUrl: './images/chin-up.gif?text=CHIN+UP', notes: "Focus sull'avambraccio. Presa neutra e stretta." },
 			{ name: "Lombari Iperestensioni", sets: 3, reps: "12", rest: "60s", defaultWeight: 10, imageUrl: './images/hyperextension.gif?text=HYPEREXTENSION', notes: "Esegui lentamente con controllo. Non forzare l'estensione." },
 			{ name: "Abdoninal Crunch", sets: 4, reps: "15", rest: "60s", defaultWeight: 20, imageUrl: './images/ABS_CRUNCH_MC.gif?text=CRUNCH', notes: "Concentrati sull'avvicinare lo sterno al bacino, non sul collo." },
 		]
