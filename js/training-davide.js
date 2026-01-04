@@ -1750,6 +1750,10 @@ function renderDay(dayId) {
 		// --- Costruiamo la card compatta ---
 		cardsHtml += `<div class="horizontal-snap-child" data-index="${exIndex}">
 			<div class="bg-gray-800 p-4 m-1 rounded-xl shadow-lg border border-gray-700">
+			    <!-- Tasto Modifica (In alto a destra) -->
+				<button onclick="window.openEditModal('${dayId}', ${exIndex})" class="absolute top-3 right-3 p-2 bg-gray-700 hover:bg-gray-600 text-blue-400 rounded-full shadow-sm z-10">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+				</button>
 				<div class="flex flex-col sm:flex-row gap-4">
 	
 				<!-- Immagine (dal tuo codice originale) -->
