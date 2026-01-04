@@ -1670,6 +1670,73 @@ function switchDay(newDayId) { /* ... codice invariato ... */
 }
 window.switchDay = switchDay;
 
+// Variabili temporanee per sapere cosa stiamo modificando
+let editingDayId = null;
+let editingExIndex = null;
+
+/**
+ * Apre il modale di modifica con i dati dell'esercizio corrente.
+ */
+function openEditModal(dayId, exIndex) {
+    const exercise = window.workoutDays[dayId].exercises[exIndex];
+    if (!exercise) return;
+
+    editingDayId = dayId;
+    editingExIndex = exIndex;
+
+    // Popola i campi
+    document.getElementById('edit-modal-title').textContent = exercise.name;
+    document.getElementById('edit-sets-count').textContent = exercise.sets;
+    document.getElementById('edit-reps').value = exercise.reps;
+    document.getElementById('edit-weight').value = exercise.defaultWeight || 0;
+    document.getElementById('edit-rest').value = exercise.rest;
+    document.getElementById('edit-notes').value = exercise.notes || '';
+
+    // Mostra modale
+    document.getElementById('edit-exercise-modal').classList.remove('hidden');
+}
+window.openEditModal = openEditModal;
+
+/**
+ * Aumenta o diminuisce il numero di serie nel modale.
+ */
+function adjustSetCount(delta) {
+    const display = document.getElementById('edit-sets-count');
+    let current = parseInt(display.textContent, 10);
+    current += delta;
+    if (current < 1) current = 1; // Minimo 1 serie
+    if (current > 10) current = 10; // Massimo 10 serie (sicurezza)
+    display.textContent = current;
+}
+window.adjustSetCount = adjustSetCount;
+
+/**
+ * Salva le modifiche nell'oggetto globale e aggiorna la vista.
+ */
+function saveExerciseEdit() {
+    const exercise = window.workoutDays[editingDayId].exercises[editingExIndex];
+    
+    // Aggiorna i dati in memoria
+    exercise.sets = parseInt(document.getElementById('edit-sets-count').textContent, 10);
+    exercise.reps = document.getElementById('edit-reps').value;
+    exercise.defaultWeight = parseFloat(document.getElementById('edit-weight').value);
+    exercise.rest = document.getElementById('edit-rest').value;
+    exercise.notes = document.getElementById('edit-notes').value;
+
+    // Chiudi modale
+    document.getElementById('edit-exercise-modal').classList.add('hidden');
+    
+    // Ricarica la vista per mostrare le modifiche (es. 4 serie invece di 3)
+    renderDay(editingDayId);
+    
+    showTemporaryMessage('Esercizio aggiornato!', 'bg-blue-600');
+    
+    // Opzionale: Se volessimo salvare queste modifiche su Firebase per il futuro, 
+    // dovremmo avere una struttura "template" su DB. 
+    // Per ora le salviamo nella sessione corrente (saveActiveSession se l'allenamento è iniziato).
+}
+window.saveExerciseEdit = saveExerciseEdit;
+
 function renderDay(dayId) { 
 	const dayData = window.workoutDays[dayId]; const contentDiv = document.getElementById('workout-content');
 	document.getElementById('mode-toggle-button').classList.remove('hidden'); document.getElementById('guided-controls-container').classList.add('hidden'); document.getElementById('day-tabs').classList.remove('hidden'); document.getElementById('total-timer').classList.add('hidden');
